@@ -1,4 +1,4 @@
-module github.com/gardener/machine-controller-manager-provider-sampleprovider
+module github.com/gardener/machine-controller-manager-provider-alicloud
 
 go 1.13
 
