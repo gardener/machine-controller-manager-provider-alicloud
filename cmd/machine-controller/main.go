@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"os"
 
-	cp "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/provider"
+	cp "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud"
 	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
 	_ "github.com/gardener/machine-controller-manager/pkg/util/client/metrics/prometheus" // for client metric registration
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/app"
