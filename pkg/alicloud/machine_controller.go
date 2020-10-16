@@ -130,7 +130,7 @@ func (p *Provider) CreateMachine(ctx context.Context, req *driver.CreateMachineR
 
 	return &driver.CreateMachineResponse{
 		ProviderID:     encodeProviderID(providerSpec.Region, instanceID),
-		NodeName:       instanceID,
+		NodeName:       instanceIDToName(instanceID),
 		LastKnownState: fmt.Sprintf("ECS instance %s created for machine %s", instanceID, req.Machine.Name),
 	}, nil
 }
@@ -231,7 +231,30 @@ func (p *Provider) ListMachines(ctx context.Context, req *driver.ListMachinesReq
 	klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
 	defer klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
 
-	return &driver.ListMachinesResponse{}, status.Error(codes.Unimplemented, "")
+	providerSpec, err := decodeProviderSpec(req.MachineClass)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	client, err := newECSClient(req.Secret, providerSpec.Region)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	instances, err := describeInstances("", providerSpec, client)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	listOfMachines := make(map[string]string)
+	for _, instance := range instances {
+		machineName := instance.InstanceName
+		listOfMachines[encodeProviderID(providerSpec.Region, instance.InstanceId)] = machineName
+	}
+
+	return &driver.ListMachinesResponse{
+		MachineList: listOfMachines,
+	}, nil
 }
 
 // GetVolumeIDs returns a list of Volume IDs for all PV Specs for whom an provider volume was found
@@ -247,7 +270,24 @@ func (p *Provider) GetVolumeIDs(ctx context.Context, req *driver.GetVolumeIDsReq
 	klog.V(2).Infof("GetVolumeIDs request has been recieved for %q", req.PVSpecs)
 	defer klog.V(2).Infof("GetVolumeIDs request has been processed successfully for %q", req.PVSpecs)
 
-	return &driver.GetVolumeIDsResponse{}, status.Error(codes.Unimplemented, "")
+	var volumeIDs []string
+	for i := range req.PVSpecs {
+		pvSpec := req.PVSpecs[i]
+		if pvSpec.FlexVolume != nil && pvSpec.FlexVolume.Options != nil {
+			if volumeID, ok := pvSpec.FlexVolume.Options["volumeId"]; ok {
+				volumeIDs = append(volumeIDs, volumeID)
+			}
+		} else if pvSpec.CSI != nil && pvSpec.CSI.Driver == AlicloudDriverName && pvSpec.CSI.VolumeHandle != "" {
+			volumeIDs = append(volumeIDs, pvSpec.CSI.VolumeHandle)
+		}
+	}
+
+	klog.V(2).Infof("GetVolumeIDs machines request has been processed successfully (%d/%d).", len(volumeIDs), len(req.PVSpecs))
+	klog.V(4).Infof("GetVolumeIDs volumneIDs: %v", volumeIDs)
+
+	return &driver.GetVolumeIDsResponse{
+		VolumeIDs: volumeIDs,
+	}, nil
 }
 
 // GenerateMachineClassForMigration helps in migration of one kind of machineClass CR to another kind.

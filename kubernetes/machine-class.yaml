@@ -1,10 +1,29 @@
 apiVersion: machine.sapcloud.io/v1alpha1
 kind: MachineClass
 metadata:
-  name: test-mc
-  namespace: default # Namespace where the controller would watch
+  name: {{ $machineClass.name }}
+  namespace: {{ $.Release.Namespace }}
 providerSpec:
-  dummy-field: "provider-api based fields goes here"
+  imageID: {{ $machineClass.imageID }}
+  instanceType: {{ $machineClass.instanceType }}
+  region: {{ $machineClass.region }}
+  zoneID: {{ $machineClass.zoneID }}
+  securityGroupID: {{ $machineClass.securityGroupID }}
+  vSwitchID: {{ $machineClass.vSwitchID }}
+  systemDisk:
+    category: {{ $machineClass.systemDisk.category }}
+    size: {{ $machineClass.systemDisk.size }}
+  {{- if $machineClass.dataDisks }}
+dataDisks:
+  {{ toYaml $machineClass.dataDisks | indent 2 }}
+  {{- end }}
+instanceChargeType: {{ $machineClass.instanceChargeType }}
+internetChargeType: {{ $machineClass.internetChargeType }}
+internetMaxBandwidthIn: {{ $machineClass.internetMaxBandwidthIn }}
+spotStrategy: {{ $machineClass.spotStrategy }}
+keyPairName: {{ $machineClass.keyPairName }}
+tags:
+  {{ toYaml $machineClass.tags | indent 4 }}
 secretRef: # If required
-  name: test-secret
-  namespace: default # Namespace where the controller would watch
+  name: {{ $machineClass.name }}
+  namespace: {{ $.Release.Namespace }}

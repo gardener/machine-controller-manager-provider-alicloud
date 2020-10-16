@@ -36,6 +36,8 @@ const (
 	AlicloudAccessKeySecret string = "alicloudAccessKeySecret"
 	// AlicloudUserData is a constant for user data
 	AlicloudUserData string = "userData"
+	// alicloudDriverName is the name of the CSI driver for Alibaba Cloud
+	AlicloudDriverName = "diskplugin.csi.alibabacloud.com"
 )
 
 func newECSClient(secret *corev1.Secret, region string) (*ecs.Client, error) {
@@ -156,4 +158,10 @@ func describeInstances(providerID string, providerSpec *api.ProviderSpec, client
 	}
 
 	return response.Instances.Instance, nil
+}
+
+// Host name in Alicloud has relationship with Instance ID
+// i-uf69zddmom11ci7est12 => izuf69zddmom11ci7est12z
+func instanceIDToName(instanceID string) string {
+	return strings.Replace(instanceID, "-", "z", 1) + "z"
 }
