@@ -161,17 +161,19 @@ func (p *Provider) DeleteMachine(ctx context.Context, req *driver.DeleteMachineR
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	instances, err := describeInstances(req.Machine.Spec.ProviderID, providerSpec, client)
+	instances, err := describeInstances("", req.Machine.Spec.ProviderID, providerSpec, client)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	} else if len(instances) == 0 {
 		// No running instance exists with the given machineID
-		klog.V(2).Infof("No matching instances found with %q", req.Machine.Spec.ProviderID)
-		return nil, nil
+		errMessage := fmt.Sprintf("ECS instance not found backing this machine object with Provider ID: %v", req.Machine.Spec.ProviderID)
+		klog.V(2).Infof(errMessage)
+
+		return nil, status.Error(codes.NotFound, errMessage)
 	}
 
 	if instances[0].Status != "Running" && instances[0].Status != "Stopped" {
-		return nil, status.Error(codes.Internal, "ECS instance not in running/stopped state")
+		return nil, status.Error(codes.Unavailable, "ECS instance not in running/stopped state")
 	}
 
 	instanceID := decodeProviderID(req.Machine.Spec.ProviderID)
@@ -210,7 +212,44 @@ func (p *Provider) GetMachineStatus(ctx context.Context, req *driver.GetMachineS
 	klog.V(2).Infof("Get request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
 
-	return &driver.GetMachineStatusResponse{}, status.Error(codes.Unimplemented, "")
+	klog.V(2).Infof("Machine name found with %q", req.Machine.Name)
+	providerSpec, err := decodeProviderSpec(req.MachineClass)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	client, err := newECSClient(req.Secret, providerSpec.Region)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	instances, err := describeInstances(req.Machine.Name, "", providerSpec, client)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if len(instances) == 0 {
+		// No running instance exists with the given machineID
+		klog.V(2).Infof("No matching instances found with %q", req.Machine.Name)
+		errMessage := fmt.Sprintf("VM instance not found backing this machine object %v", req.Machine.Name)
+		return nil, status.Error(codes.NotFound, errMessage)
+	} else if len(instances) > 1 {
+		instanceIDs := []string{}
+		for _, instance := range instances {
+			instanceIDs = append(instanceIDs, instance.InstanceId)
+		}
+
+		errMessage := fmt.Sprintf("multiple VM instances found backing this machine object. IDs for all backing VMs - %v ", instanceIDs)
+		return nil, status.Error(codes.OutOfRange, errMessage)
+	}
+
+	response := &driver.GetMachineStatusResponse{
+		NodeName:   instanceIDToName(instances[0].InstanceId),
+		ProviderID: encodeProviderID(providerSpec.Region, instances[0].InstanceId),
+	}
+
+	klog.V(3).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
+	return response, nil
 }
 
 // ListMachines lists all the machines possibilly created by a providerSpec
@@ -241,7 +280,7 @@ func (p *Provider) ListMachines(ctx context.Context, req *driver.ListMachinesReq
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	instances, err := describeInstances("", providerSpec, client)
+	instances, err := describeInstances("", "", providerSpec, client)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

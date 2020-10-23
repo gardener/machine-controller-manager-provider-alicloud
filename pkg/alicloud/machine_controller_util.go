@@ -124,12 +124,14 @@ func decodeProviderID(providerID string) string {
 	return splitProviderID[len(splitProviderID)-1]
 }
 
-func describeInstances(providerID string, providerSpec *api.ProviderSpec, client *ecs.Client) ([]ecs.Instance, error) {
+func describeInstances(instanceName, providerID string, providerSpec *api.ProviderSpec, client *ecs.Client) ([]ecs.Instance, error) {
 	request := ecs.CreateDescribeInstancesRequest()
 
 	if providerID != "" {
 		instanceID := decodeProviderID(providerID)
 		request.InstanceIds = "[\"" + instanceID + "\"]"
+	} else if instanceName != "" {
+		request.InstanceName = instanceName
 	} else {
 		searchFilters := make(map[string]string)
 		for k, v := range providerSpec.Tags {
