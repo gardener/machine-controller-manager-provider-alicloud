@@ -14,14 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package spi
+// Package provider contains the cloud provider specific implementations to manage machines
+package alicloud
 
-// SessionProviderInterface provides an interface to deal with cloud provider session
-// Example interfaces are listed below.
-type SessionProviderInterface interface {
-	// NewSession(*corev1.Secret, string) (*session.Session, error)
-	// NewEC2API(*session.Session) ec2iface.EC2API
-}
+import (
+	. "github.com/onsi/ginkgo"
+)
 
-// PluginSPIImpl is the real implementation of SPI interface that makes the calls to the provider SDK.
-type PluginSPIImpl struct{}
+var _ = Describe("Machine Controller", func() {
+	//alicloudPVSpec := &corev1.PersistentVolumeSpec{
+	//	PersistentVolumeSource: corev1.PersistentVolumeSource{
+	//		CSI: &corev1.CSIPersistentVolumeSource{
+	//			Driver: AlicloudDriverName,
+	//			VolumeHandle: "vol-csi",
+	//		},
+	//	},
+	//}
+	//
+	//alicloudPVSpecEmpty := &corev1.PersistentVolumeSpec{
+	//	PersistentVolumeSource: corev1.PersistentVolumeSource{},
+	//}
+})

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved.
+Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -29,8 +29,8 @@ type ProviderSpec struct {
 	DataDisks               []AlicloudDataDisk      `json:"dataDisks,omitempty"`
 	InstanceChargeType      string                  `json:"instanceChargeType,omitempty"`
 	InternetChargeType      string                  `json:"internetChargeType,omitempty"`
-	InternetMaxBandwidthIn  *int                    `json:"internetMaxBandwidthIn,omitempty"`
-	InternetMaxBandwidthOut *int                    `json:"internetMaxBandwidthOut,omitempty"`
+	InternetMaxBandwidthIn  *int32                  `json:"internetMaxBandwidthIn,omitempty"`
+	InternetMaxBandwidthOut *int32                  `json:"internetMaxBandwidthOut,omitempty"`
 	SpotStrategy            string                  `json:"spotStrategy,omitempty"`
 	IoOptimized             string                  `json:"IoOptimized,omitempty"`
 	Tags                    map[string]string       `json:"tags,omitempty"`
@@ -44,11 +44,11 @@ type AlicloudDataDisk struct {
 	Description        string `json:"description,omitEmpty"`
 	Encrypted          bool   `json:"encrypted,omitEmpty"`
 	DeleteWithInstance *bool  `json:"deleteWithInstance,omitEmpty"`
-	Size               int    `json:"size,omitEmpty"`
+	Size               int32  `json:"size,omitEmpty"`
 }
 
 // AlicloudSystemDisk describes SystemDisk for Alicloud.
 type AlicloudSystemDisk struct {
 	Category string `json:"category"`
-	Size     int    `json:"size"`
+	Size     int32  `json:"size"`
 }

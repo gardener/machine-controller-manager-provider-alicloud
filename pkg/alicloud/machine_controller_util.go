@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved.
+Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,8 +24,6 @@ import (
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
-	corev1 "k8s.io/api/core/v1"
-	"strconv"
 	"strings"
 )
 
@@ -40,17 +38,6 @@ const (
 	AlicloudDriverName = "diskplugin.csi.alibabacloud.com"
 )
 
-func newECSClient(secret *corev1.Secret, region string) (*ecs.Client, error) {
-	accessKeyID := strings.TrimSpace(string(secret.Data[AlicloudAccessKeyID]))
-	accessKeySecret := strings.TrimSpace(string(secret.Data[AlicloudAccessKeySecret]))
-	ecsClient, err := ecs.NewClientWithAccessKey(region, accessKeyID, accessKeySecret)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return ecsClient, err
-}
-
 func decodeProviderSpec(machineClass *v1alpha1.MachineClass) (*api.ProviderSpec, error) {
 	var providerSpec *api.ProviderSpec
 	err := json.Unmarshal(machineClass.ProviderSpec.Raw, &providerSpec)
@@ -59,33 +46,6 @@ func decodeProviderSpec(machineClass *v1alpha1.MachineClass) (*api.ProviderSpec,
 	}
 
 	return providerSpec, nil
-}
-
-func generateDataDiskRequests(disks []api.AlicloudDataDisk, machineName string) []ecs.RunInstancesDataDisk {
-	var dataDiskRequests []ecs.RunInstancesDataDisk
-	for _, disk := range disks {
-		dataDiskRequest := ecs.RunInstancesDataDisk{
-			Category:    disk.Category,
-			Encrypted:   strconv.FormatBool(disk.Encrypted),
-			DiskName:    fmt.Sprintf("%s-%s-data-disk", machineName, disk.Name),
-			Description: disk.Description,
-			Size:        fmt.Sprintf("%d", disk.Size),
-		}
-
-		if disk.DeleteWithInstance != nil {
-			dataDiskRequest.DeleteWithInstance = strconv.FormatBool(*disk.DeleteWithInstance)
-		} else {
-			dataDiskRequest.DeleteWithInstance = strconv.FormatBool(true)
-		}
-
-		if disk.Category == "DiskEphemeralSSD" {
-			dataDiskRequest.DeleteWithInstance = ""
-		}
-
-		dataDiskRequests = append(dataDiskRequests, dataDiskRequest)
-	}
-
-	return dataDiskRequests
 }
 
 func toInstanceTags(tags map[string]string) ([]ecs.RunInstancesTag, error) {
@@ -122,44 +82,6 @@ func encodeProviderID(region, instanceID string) string {
 func decodeProviderID(providerID string) string {
 	splitProviderID := strings.Split(providerID, ".")
 	return splitProviderID[len(splitProviderID)-1]
-}
-
-func describeInstances(instanceName, providerID string, providerSpec *api.ProviderSpec, client *ecs.Client) ([]ecs.Instance, error) {
-	request := ecs.CreateDescribeInstancesRequest()
-
-	if providerID != "" {
-		instanceID := decodeProviderID(providerID)
-		request.InstanceIds = "[\"" + instanceID + "\"]"
-	} else if instanceName != "" {
-		request.InstanceName = instanceName
-	} else {
-		searchFilters := make(map[string]string)
-		for k, v := range providerSpec.Tags {
-			if strings.Contains(k, "kubernetes.io/cluster/") || strings.Contains(k, "kubernetes.io/role/") {
-				searchFilters[k] = v
-			}
-		}
-
-		if len(searchFilters) < 2 {
-			return nil, fmt.Errorf("Can't find VMs with none of machineID/Tag[kubernetes.io/cluster/*]/Tag[kubernetes.io/role/*]")
-		}
-
-		var tags []ecs.DescribeInstancesTag
-		for k, v := range searchFilters {
-			tags = append(tags, ecs.DescribeInstancesTag{
-				Key:   k,
-				Value: v,
-			})
-		}
-		request.Tag = &tags
-	}
-
-	response, err := client.DescribeInstances(request)
-	if err != nil {
-		return nil, err
-	}
-
-	return response.Instances.Instance, nil
 }
 
 // Host name in Alicloud has relationship with Instance ID

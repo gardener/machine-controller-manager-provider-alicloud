@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved.
+Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,12 +19,7 @@ package alicloud
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
@@ -62,7 +57,7 @@ import (
 // These could be done using tag(s)/resource-groups etc.
 // This logic is used by safety controller to delete orphan VMs which are not backed by any machine CRD
 //
-func (p *Provider) CreateMachine(ctx context.Context, req *driver.CreateMachineRequest) (*driver.CreateMachineResponse, error) {
+func (plugin *MachinePlugin) CreateMachine(ctx context.Context, req *driver.CreateMachineRequest) (*driver.CreateMachineResponse, error) {
 	// Log messages to track request
 	klog.V(2).Infof("Machine creation request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine creation request has been processed for %q", req.Machine.Name)
@@ -72,52 +67,15 @@ func (p *Provider) CreateMachine(ctx context.Context, req *driver.CreateMachineR
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	client, err := newECSClient(req.Secret, providerSpec.Region)
+	client, err := plugin.SPI.NewECSClient(req.Secret, providerSpec.Region)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	request := ecs.CreateRunInstancesRequest()
-
-	request.ImageId = providerSpec.ImageID
-	request.InstanceType = providerSpec.InstanceType
-	request.RegionId = providerSpec.Region
-	request.ZoneId = providerSpec.ZoneID
-	request.SecurityGroupId = providerSpec.SecurityGroupID
-	request.VSwitchId = providerSpec.VSwitchID
-	request.PrivateIpAddress = providerSpec.PrivateIPAddress
-	request.InstanceChargeType = providerSpec.InstanceChargeType
-	request.InternetChargeType = providerSpec.InternetChargeType
-	request.SpotStrategy = providerSpec.SpotStrategy
-	request.IoOptimized = providerSpec.IoOptimized
-	request.KeyPairName = providerSpec.KeyPairName
-
-	if providerSpec.InternetMaxBandwidthIn != nil {
-		request.InternetMaxBandwidthIn = requests.NewInteger(*providerSpec.InternetMaxBandwidthIn)
-	}
-
-	if providerSpec.InternetMaxBandwidthOut != nil {
-		request.InternetMaxBandwidthOut = requests.NewInteger(*providerSpec.InternetMaxBandwidthOut)
-	}
-
-	if providerSpec.DataDisks != nil && len(providerSpec.DataDisks) > 0 {
-		dataDiskRequests := generateDataDiskRequests(providerSpec.DataDisks, req.Machine.Name)
-		request.DataDisk = &dataDiskRequests
-	}
-
-	if providerSpec.SystemDisk != nil {
-		request.SystemDiskCategory = providerSpec.SystemDisk.Category
-		request.SystemDiskSize = fmt.Sprintf("%d", providerSpec.SystemDisk.Size)
-	}
-
-	tags, err := toInstanceTags(providerSpec.Tags)
+	request, err := plugin.SPI.NewRunInstancesRequest(providerSpec, req.Machine.Name, req.Secret.Data[AlicloudUserData])
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	request.Tag = &tags
-	request.InstanceName = req.Machine.Name
-	request.ClientToken = utils.GetUUIDV4()
-	request.UserData = base64.StdEncoding.EncodeToString(req.Secret.Data[AlicloudUserData])
 
 	response, err := client.RunInstances(request)
 	if err != nil {
@@ -146,7 +104,7 @@ func (p *Provider) CreateMachine(ctx context.Context, req *driver.CreateMachineR
 // LastKnownState        bytes(blob)              (Optional) Last known state of VM during the current operation.
 //                                                Could be helpful to continue operations in future requests.
 //
-func (p *Provider) DeleteMachine(ctx context.Context, req *driver.DeleteMachineRequest) (*driver.DeleteMachineResponse, error) {
+func (plugin *MachinePlugin) DeleteMachine(ctx context.Context, req *driver.DeleteMachineRequest) (*driver.DeleteMachineResponse, error) {
 	// Log messages to track delete request
 	klog.V(2).Infof("Machine deletion request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine deletion request has been processed for %q", req.Machine.Name)
@@ -156,15 +114,22 @@ func (p *Provider) DeleteMachine(ctx context.Context, req *driver.DeleteMachineR
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	client, err := newECSClient(req.Secret, providerSpec.Region)
+	client, err := plugin.SPI.NewECSClient(req.Secret, providerSpec.Region)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	instances, err := describeInstances("", req.Machine.Spec.ProviderID, providerSpec, client)
+	describeInstanceRequest, err := plugin.SPI.NewDescribeInstancesRequest("", req.Machine.Spec.ProviderID, providerSpec.Tags)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
-	} else if len(instances) == 0 {
+	}
+	response, err := client.DescribeInstances(describeInstanceRequest)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	instances := response.Instances.Instance
+	if len(instances) == 0 {
 		// No running instance exists with the given machineID
 		errMessage := fmt.Sprintf("ECS instance not found backing this machine object with Provider ID: %v", req.Machine.Spec.ProviderID)
 		klog.V(2).Infof(errMessage)
@@ -177,11 +142,11 @@ func (p *Provider) DeleteMachine(ctx context.Context, req *driver.DeleteMachineR
 	}
 
 	instanceID := decodeProviderID(req.Machine.Spec.ProviderID)
-	request := ecs.CreateDeleteInstanceRequest()
-	request.InstanceId = instanceID
-	request.Force = requests.NewBoolean(true)
-
-	_, err = client.DeleteInstance(request)
+	deleteInstanceRequest, err := plugin.SPI.NewDeleteInstanceRequest(instanceID, true)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	_, err = client.DeleteInstance(deleteInstanceRequest)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -207,7 +172,7 @@ func (p *Provider) DeleteMachine(ctx context.Context, req *driver.DeleteMachineR
 //                                                This could be different from req.MachineName as well
 //
 // The request should return a NOT_FOUND (5) status error code if the machine is not existing
-func (p *Provider) GetMachineStatus(ctx context.Context, req *driver.GetMachineStatusRequest) (*driver.GetMachineStatusResponse, error) {
+func (plugin *MachinePlugin) GetMachineStatus(ctx context.Context, req *driver.GetMachineStatusRequest) (*driver.GetMachineStatusResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("Get request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
@@ -218,16 +183,21 @@ func (p *Provider) GetMachineStatus(ctx context.Context, req *driver.GetMachineS
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	client, err := newECSClient(req.Secret, providerSpec.Region)
+	client, err := plugin.SPI.NewECSClient(req.Secret, providerSpec.Region)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	instances, err := describeInstances(req.Machine.Name, "", providerSpec, client)
+	request, err := plugin.SPI.NewDescribeInstancesRequest(req.Machine.Name, "", providerSpec.Tags)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	response, err := client.DescribeInstances(request)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	instances := response.Instances.Instance
 	if len(instances) == 0 {
 		// No running instance exists with the given machineID
 		klog.V(2).Infof("No matching instances found with %q", req.Machine.Name)
@@ -243,13 +213,11 @@ func (p *Provider) GetMachineStatus(ctx context.Context, req *driver.GetMachineS
 		return nil, status.Error(codes.OutOfRange, errMessage)
 	}
 
-	response := &driver.GetMachineStatusResponse{
+	klog.V(3).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
+	return &driver.GetMachineStatusResponse{
 		NodeName:   instanceIDToName(instances[0].InstanceId),
 		ProviderID: encodeProviderID(providerSpec.Region, instances[0].InstanceId),
-	}
-
-	klog.V(3).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
-	return response, nil
+	}, nil
 }
 
 // ListMachines lists all the machines possibilly created by a providerSpec
@@ -265,7 +233,7 @@ func (p *Provider) GetMachineStatus(ctx context.Context, req *driver.GetMachineS
 // MachineList           map<string,string>  A map containing the keys as the MachineID and value as the MachineName
 //                                           for all machine's who where possibilly created by this ProviderSpec
 //
-func (p *Provider) ListMachines(ctx context.Context, req *driver.ListMachinesRequest) (*driver.ListMachinesResponse, error) {
+func (plugin *MachinePlugin) ListMachines(ctx context.Context, req *driver.ListMachinesRequest) (*driver.ListMachinesResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
 	defer klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
@@ -275,16 +243,21 @@ func (p *Provider) ListMachines(ctx context.Context, req *driver.ListMachinesReq
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	client, err := newECSClient(req.Secret, providerSpec.Region)
+	client, err := plugin.SPI.NewECSClient(req.Secret, providerSpec.Region)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	instances, err := describeInstances("", "", providerSpec, client)
+	request, err := plugin.SPI.NewDescribeInstancesRequest("", "", providerSpec.Tags)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	response, err := client.DescribeInstances(request)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	instances := response.Instances.Instance
 	listOfMachines := make(map[string]string)
 	for _, instance := range instances {
 		machineName := instance.InstanceName
@@ -304,7 +277,7 @@ func (p *Provider) ListMachines(ctx context.Context, req *driver.ListMachinesReq
 // RESPONSE PARAMETERS (driver.GetVolumeIDsResponse)
 // VolumeIDs             []string                             VolumeIDs is a repeated list of VolumeIDs.
 //
-func (p *Provider) GetVolumeIDs(ctx context.Context, req *driver.GetVolumeIDsRequest) (*driver.GetVolumeIDsResponse, error) {
+func (plugin *MachinePlugin) GetVolumeIDs(ctx context.Context, req *driver.GetVolumeIDsRequest) (*driver.GetVolumeIDsResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("GetVolumeIDs request has been recieved for %q", req.PVSpecs)
 	defer klog.V(2).Infof("GetVolumeIDs request has been processed successfully for %q", req.PVSpecs)
@@ -348,7 +321,7 @@ func (p *Provider) GetVolumeIDs(ctx context.Context, req *driver.GetVolumeIDsReq
 // RESPONSE PARAMETERS (driver.GenerateMachineClassForMigration)
 // NONE
 //
-func (p *Provider) GenerateMachineClassForMigration(ctx context.Context, req *driver.GenerateMachineClassForMigrationRequest) (*driver.GenerateMachineClassForMigrationResponse, error) {
+func (plugin *MachinePlugin) GenerateMachineClassForMigration(ctx context.Context, req *driver.GenerateMachineClassForMigrationRequest) (*driver.GenerateMachineClassForMigrationResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("MigrateMachineClass request has been recieved for %q", req.ClassSpec)
 	defer klog.V(2).Infof("MigrateMachineClass request has been processed successfully for %q", req.ClassSpec)

@@ -14,6 +14,7 @@ require (
 	k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 	k8s.io/component-base v0.0.0-20190918160511-547f6c5d7090
 	k8s.io/klog v0.4.0
+	k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 )
 
 replace (
