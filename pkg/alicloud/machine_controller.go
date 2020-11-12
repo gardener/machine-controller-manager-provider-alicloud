@@ -20,6 +20,8 @@ package alicloud
 import (
 	"context"
 	"fmt"
+
+	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
@@ -72,7 +74,7 @@ func (plugin *MachinePlugin) CreateMachine(ctx context.Context, req *driver.Crea
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	request, err := plugin.SPI.NewRunInstancesRequest(providerSpec, req.Machine.Name, req.Secret.Data[AlicloudUserData])
+	request, err := plugin.SPI.NewRunInstancesRequest(providerSpec, req.Machine.Name, req.Secret.Data[spi.AlicloudUserData])
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -119,7 +121,8 @@ func (plugin *MachinePlugin) DeleteMachine(ctx context.Context, req *driver.Dele
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	describeInstanceRequest, err := plugin.SPI.NewDescribeInstancesRequest("", req.Machine.Spec.ProviderID, providerSpec.Tags)
+	instanceID := decodeProviderID(req.Machine.Spec.ProviderID)
+	describeInstanceRequest, err := plugin.SPI.NewDescribeInstancesRequest("", instanceID, providerSpec.Tags)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -141,7 +144,6 @@ func (plugin *MachinePlugin) DeleteMachine(ctx context.Context, req *driver.Dele
 		return nil, status.Error(codes.Unavailable, "ECS instance not in running/stopped state")
 	}
 
-	instanceID := decodeProviderID(req.Machine.Spec.ProviderID)
 	deleteInstanceRequest, err := plugin.SPI.NewDeleteInstanceRequest(instanceID, true)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -289,7 +291,7 @@ func (plugin *MachinePlugin) GetVolumeIDs(ctx context.Context, req *driver.GetVo
 			if volumeID, ok := pvSpec.FlexVolume.Options["volumeId"]; ok {
 				volumeIDs = append(volumeIDs, volumeID)
 			}
-		} else if pvSpec.CSI != nil && pvSpec.CSI.Driver == AlicloudDriverName && pvSpec.CSI.VolumeHandle != "" {
+		} else if pvSpec.CSI != nil && pvSpec.CSI.Driver == spi.AlicloudDriverName && pvSpec.CSI.VolumeHandle != "" {
 			volumeIDs = append(volumeIDs, pvSpec.CSI.VolumeHandle)
 		}
 	}

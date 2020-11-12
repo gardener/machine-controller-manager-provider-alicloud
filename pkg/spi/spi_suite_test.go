@@ -14,18 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package mock
+package spi
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	corev1 "k8s.io/api/core/v1"
+	"testing"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
-// PluginSPIMock is the mock implementation of PluginSPI
-type PluginSPIMock struct{}
-
-// NewECSClient returns a mock instance of the ECS client.
-func (pluginSPI *PluginSPIMock) NewECSClient(secret *corev1.Secret, region string) (*ecs.Client, error) {
-	return nil, nil
+func TestSPI(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Machine Controller Manager Plugin SPI Suite")
 }
-

@@ -26,6 +26,8 @@ import (
 	"os"
 
 	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud"
+	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
+
 	_ "github.com/gardener/machine-controller-manager/pkg/util/client/metrics/prometheus" // for client metric registration
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/app"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/app/options"
@@ -45,7 +47,7 @@ func main() {
 	logs.InitLogs()
 	defer logs.FlushLogs()
 
-	plugin := alicloud.NewAlicloudPlugin(&alicloud.PluginSPIImpl{})
+	plugin := alicloud.NewAlicloudPlugin(&spi.PluginSPIImpl{})
 
 	if err := app.Run(s, plugin); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)

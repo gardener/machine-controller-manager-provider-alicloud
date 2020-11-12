@@ -19,23 +19,12 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"strings"
+
 	api "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/apis"
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
-	"strings"
-)
-
-const (
-	// AlicloudAccessKeyID is a constant for a key name that is part of the Alibaba cloud credentials.
-	AlicloudAccessKeyID string = "alicloudAccessKeyID"
-	// AlicloudAccessKeySecret is a constant for a key name that is part of the Alibaba cloud credentials.
-	AlicloudAccessKeySecret string = "alicloudAccessKeySecret"
-	// AlicloudUserData is a constant for user data
-	AlicloudUserData string = "userData"
-	// alicloudDriverName is the name of the CSI driver for Alibaba Cloud
-	AlicloudDriverName = "diskplugin.csi.alibabacloud.com"
 )
 
 func decodeProviderSpec(machineClass *v1alpha1.MachineClass) (*api.ProviderSpec, error) {
@@ -46,33 +35,6 @@ func decodeProviderSpec(machineClass *v1alpha1.MachineClass) (*api.ProviderSpec,
 	}
 
 	return providerSpec, nil
-}
-
-func toInstanceTags(tags map[string]string) ([]ecs.RunInstancesTag, error) {
-	result := []ecs.RunInstancesTag{{}, {}}
-	hasCluster := false
-	hasRole := false
-
-	for k, v := range tags {
-		if strings.Contains(k, "kubernetes.io/cluster/") {
-			hasCluster = true
-			result[0].Key = k
-			result[0].Value = v
-		} else if strings.Contains(k, "kubernetes.io/role/") {
-			hasRole = true
-			result[1].Key = k
-			result[1].Value = v
-		} else {
-			result = append(result, ecs.RunInstancesTag{Key: k, Value: v})
-		}
-	}
-
-	if !hasCluster || !hasRole {
-		err := fmt.Errorf("Tags should at least contains 2 keys, which are prefixed with kubernetes.io/cluster and kubernetes.io/role")
-		return nil, err
-	}
-
-	return result, nil
 }
 
 func encodeProviderID(region, instanceID string) string {
