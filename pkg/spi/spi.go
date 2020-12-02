@@ -25,10 +25,11 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	api "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/apis"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
 	corev1 "k8s.io/api/core/v1"
+
+	api "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/apis"
 )
 
 const (
@@ -36,6 +37,12 @@ const (
 	AlicloudAccessKeyID string = "alicloudAccessKeyID"
 	// AlicloudAccessKeySecret is a constant for a key name that is part of the Alibaba cloud credentials.
 	AlicloudAccessKeySecret string = "alicloudAccessKeySecret"
+	// AlicloudAlternativeAccessKeyID is a constant for a key name of a secret containing the Alibaba cloud
+	// credentials (access key id).
+	AlicloudAlternativeAccessKeyID = "accessKeyID"
+	// AlicloudAlternativeAccessKeySecret is a constant for a key name of a secret containing the Alibaba cloud
+	// credentials (access key secret).
+	AlicloudAlternativeAccessKeySecret = "accessKeySecret"
 	// AlicloudUserData is a constant for user data
 	AlicloudUserData string = "userData"
 	// alicloudDriverName is the name of the CSI driver for Alibaba Cloud
@@ -66,8 +73,8 @@ type PluginSPIImpl struct{}
 
 // NewECSClient returns a new instance of the ECS client.
 func (pluginSPI *PluginSPIImpl) NewECSClient(secret *corev1.Secret, region string) (ECSClient, error) {
-	accessKeyID := strings.TrimSpace(string(secret.Data[AlicloudAccessKeyID]))
-	accessKeySecret := strings.TrimSpace(string(secret.Data[AlicloudAccessKeySecret]))
+	accessKeyID := extractCredentialsFromData(secret.Data, AlicloudAccessKeyID, AlicloudAlternativeAccessKeyID)
+	accessKeySecret := extractCredentialsFromData(secret.Data, AlicloudAccessKeySecret, AlicloudAlternativeAccessKeySecret)
 	ecsClient, err := ecs.NewClientWithAccessKey(region, accessKeyID, accessKeySecret)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -215,4 +222,15 @@ func (pluginSPI *PluginSPIImpl) NewRunInstanceTags(tags map[string]string) ([]ec
 	}
 
 	return runInstancesTags, nil
+}
+
+// extractCredentialsFromData extracts and trims a value from the given data map. The first key that exists is being
+// returned, otherwise, the next key is tried, etc. If no key exists then an empty string is returned.
+func extractCredentialsFromData(data map[string][]byte, keys ...string) string {
+	for _, key := range keys {
+		if val, ok := data[key]; ok {
+			return strings.TrimSpace(string(val))
+		}
+	}
+	return ""
 }
