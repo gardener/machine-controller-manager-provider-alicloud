@@ -30,33 +30,58 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
 )
 
 var _ = Describe("Machine Controller", func() {
 	var (
-		providerSpec = &api.ProviderSpec{
-			ImageID:                "m-uf6jf6utod2nfs9x21iwse",
-			InstanceType:           "ecs.g6.large",
-			Region:                 "cn-shanghai",
-			ZoneID:                 "cn-shanghai-e",
-			SecurityGroupID:        "sg-uf69t4txlz6r18ybzxbx",
-			VSwitchID:              "vsw-uf6s1fjxxks65rk1tkrpm",
-			InstanceChargeType:     "PostPaid",
-			InternetChargeType:     "PayByTraffic",
-			InternetMaxBandwidthIn: pointer.Int32Ptr(5),
-			SpotStrategy:           "NoSpot",
-			KeyPairName:            "shoot-ssh-publickey",
+		internetMaxBandwidthIn  = 5
+		internetMaxBandwidthOut = 5
+		providerSpec            = &api.ProviderSpec{
+			APIVersion:              api.V1alpha1,
+			ImageID:                 "m-uf6jf6utod2nfs9x21iwse",
+			InstanceType:            "ecs.g6.large",
+			Region:                  "cn-shanghai",
+			ZoneID:                  "cn-shanghai-e",
+			SecurityGroupID:         "sg-uf69t4txlz6r18ybzxbx",
+			VSwitchID:               "vsw-uf6s1fjxxks65rk1tkrpm",
+			InstanceChargeType:      "PostPaid",
+			InternetChargeType:      "PayByTraffic",
+			InternetMaxBandwidthIn:  &internetMaxBandwidthIn,
+			InternetMaxBandwidthOut: &internetMaxBandwidthOut,
+			SpotStrategy:            "NoSpot",
+			KeyPairName:             "shoot-ssh-publickey",
 			Tags: map[string]string{
 				"kubernetes.io/cluster/shoot--mcm":     "1",
 				"kubernetes.io/role/worker/shoot--mcm": "1",
 			},
 			SystemDisk: &api.AlicloudSystemDisk{
 				Category: "cloud_efficiency",
-				Size:     int32(50),
+				Size:     50,
 			},
 		}
-		providerSpecByte, _ = json.Marshal(providerSpec)
+		alicloudMachineClassSpec = &v1alpha1.AlicloudMachineClassSpec{
+			ImageID:                 "m-uf6jf6utod2nfs9x21iwse",
+			InstanceType:            "ecs.g6.large",
+			Region:                  "cn-shanghai",
+			ZoneID:                  "cn-shanghai-e",
+			SecurityGroupID:         "sg-uf69t4txlz6r18ybzxbx",
+			VSwitchID:               "vsw-uf6s1fjxxks65rk1tkrpm",
+			InstanceChargeType:      "PostPaid",
+			InternetChargeType:      "PayByTraffic",
+			InternetMaxBandwidthIn:  &internetMaxBandwidthIn,
+			InternetMaxBandwidthOut: &internetMaxBandwidthOut,
+			SpotStrategy:            "NoSpot",
+			KeyPairName:             "shoot-ssh-publickey",
+			Tags: map[string]string{
+				"kubernetes.io/cluster/shoot--mcm":     "1",
+				"kubernetes.io/role/worker/shoot--mcm": "1",
+			},
+			SystemDisk: &v1alpha1.AlicloudSystemDisk{
+				Category: "cloud_efficiency",
+				Size:     50,
+			},
+		}
+		providerSpecRaw, _ = json.Marshal(providerSpec)
 
 		machineName      = "mock-machine-name"
 		machineClassName = "mock-machine-class-name"
@@ -80,7 +105,7 @@ var _ = Describe("Machine Controller", func() {
 						Name: machineClassName,
 					},
 					ProviderSpec: runtime.RawExtension{
-						Raw: providerSpecByte,
+						Raw: providerSpecRaw,
 					},
 				},
 				Secret: &corev1.Secret{},
@@ -113,7 +138,7 @@ var _ = Describe("Machine Controller", func() {
 						Name: machineClassName,
 					},
 					ProviderSpec: runtime.RawExtension{
-						Raw: providerSpecByte,
+						Raw: providerSpecRaw,
 					},
 				},
 				Secret: &corev1.Secret{},
@@ -126,5 +151,38 @@ var _ = Describe("Machine Controller", func() {
 		response, err := MachinePluginMock.DeleteMachine(ctx, &deleteMachineRequest)
 		Expect(err).To(BeNil())
 		Expect(response).To(Equal(deleteMachineResponse))
+	})
+
+	It("should migrate old machine class to the new one", func() {
+		var (
+			migrateMachineClassRequest = &driver.GenerateMachineClassForMigrationRequest{
+				ProviderSpecificMachineClass: &v1alpha1.AlicloudMachineClass{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine-class-migration",
+					},
+					Spec: *alicloudMachineClassSpec,
+				},
+				MachineClass: &v1alpha1.MachineClass{},
+				ClassSpec: &v1alpha1.ClassSpec{
+					Kind: AlicloudMachineClassKind,
+				},
+			}
+
+			machineClass = &v1alpha1.MachineClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "machine-class-migration",
+				},
+				ProviderSpec: runtime.RawExtension{
+					Raw: providerSpecRaw,
+				},
+				Provider: ProviderAlicloud,
+			}
+
+			migrateMachineClassResponse = &driver.GenerateMachineClassForMigrationResponse{}
+		)
+		response, err := MachinePluginMock.GenerateMachineClassForMigration(ctx, migrateMachineClassRequest)
+		Expect(err).To(BeNil())
+		Expect(response).To(Equal(migrateMachineClassResponse))
+		Expect(migrateMachineClassRequest.MachineClass).To(Equal(machineClass))
 	})
 })

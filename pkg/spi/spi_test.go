@@ -27,25 +27,28 @@ import (
 var _ = Describe("Plugin SPI", func() {
 
 	var (
-		providerSpec = &api.ProviderSpec{
-			ImageID:                "m-uf6jf6utod2nfs9x21iwse",
-			InstanceType:           "ecs.g6.large",
-			Region:                 "cn-shanghai",
-			ZoneID:                 "cn-shanghai-e",
-			SecurityGroupID:        "sg-uf69t4txlz6r18ybzxbx",
-			VSwitchID:              "vsw-uf6s1fjxxks65rk1tkrpm",
-			InstanceChargeType:     "PostPaid",
-			InternetChargeType:     "PayByTraffic",
-			InternetMaxBandwidthIn: pointer.Int32Ptr(5),
-			SpotStrategy:           "NoSpot",
-			KeyPairName:            "shoot-ssh-publickey",
+		internetMaxBandwidthIn  = 5
+		internetMaxBandwidthOut = 5
+		providerSpec            = &api.ProviderSpec{
+			ImageID:                 "m-uf6jf6utod2nfs9x21iwse",
+			InstanceType:            "ecs.g6.large",
+			Region:                  "cn-shanghai",
+			ZoneID:                  "cn-shanghai-e",
+			SecurityGroupID:         "sg-uf69t4txlz6r18ybzxbx",
+			VSwitchID:               "vsw-uf6s1fjxxks65rk1tkrpm",
+			InstanceChargeType:      "PostPaid",
+			InternetChargeType:      "PayByTraffic",
+			InternetMaxBandwidthIn:  &internetMaxBandwidthIn,
+			InternetMaxBandwidthOut: &internetMaxBandwidthOut,
+			SpotStrategy:            "NoSpot",
+			KeyPairName:             "shoot-ssh-publickey",
 			Tags: map[string]string{
 				"kubernetes.io/cluster/shoot--mcm":     "1",
 				"kubernetes.io/role/worker/shoot--mcm": "1",
 			},
 			SystemDisk: &api.AlicloudSystemDisk{
 				Category: "cloud_efficiency",
-				Size:     int32(50),
+				Size:     50,
 			},
 		}
 		instanceID  = "i-u66kfxzhu3q9vm3l4a"
@@ -57,18 +60,18 @@ var _ = Describe("Plugin SPI", func() {
 				Name:      "disk-1",
 				Category:  "DiskEphemeralSSD",
 				Encrypted: true,
-				Size:      int32(50),
+				Size:      50,
 			},
 			{
 				Name:               "disk-2",
 				DeleteWithInstance: pointer.BoolPtr(false),
 				Encrypted:          true,
-				Size:               int32(100),
+				Size:               100,
 			},
 			{
 				Name:      "disk-3",
 				Encrypted: false,
-				Size:      int32(20),
+				Size:      20,
 			},
 		}
 

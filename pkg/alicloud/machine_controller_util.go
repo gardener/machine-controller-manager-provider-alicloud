@@ -27,6 +27,11 @@ import (
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
 )
 
+const (
+	// AlicloudMachineClassKind for AlicloudMachineClass
+	AlicloudMachineClassKind = "AlicloudMachineClass"
+)
+
 func decodeProviderSpec(machineClass *v1alpha1.MachineClass) (*api.ProviderSpec, error) {
 	var providerSpec *api.ProviderSpec
 	err := json.Unmarshal(machineClass.ProviderSpec.Raw, &providerSpec)
