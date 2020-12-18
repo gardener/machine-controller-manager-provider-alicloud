@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
+	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
@@ -328,5 +329,10 @@ func (plugin *MachinePlugin) GenerateMachineClassForMigration(ctx context.Contex
 	klog.V(2).Infof("MigrateMachineClass request has been recieved for %q", req.ClassSpec)
 	defer klog.V(2).Infof("MigrateMachineClass request has been processed successfully for %q", req.ClassSpec)
 
-	return &driver.GenerateMachineClassForMigrationResponse{}, status.Error(codes.Unimplemented, "")
+	alicloudMachineClass := req.ProviderSpecificMachineClass.(*v1alpha1.AlicloudMachineClass)
+	if req.ClassSpec.Kind != AlicloudMachineClassKind {
+		return nil, status.Error(codes.Internal, "Migration cannot be done for this machineClass kind")
+	}
+
+	return &driver.GenerateMachineClassForMigrationResponse{}, migrateMachineClass(alicloudMachineClass, req.MachineClass)
 }
