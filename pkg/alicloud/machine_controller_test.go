@@ -39,6 +39,12 @@ import (
 
 var _ = Describe("Machine Controller", func() {
 	var (
+		machineName      = "mock-machine-name"
+		nodeName         = "izmockinstanceidz"
+		machineClassName = "mock-machine-class-name"
+		providerID       = "cn-shanghai.i-mockinstanceid"
+		instanceID       = "i-mockinstanceid"
+
 		internetMaxBandwidthIn  = 5
 		internetMaxBandwidthOut = 5
 		providerSpec            = &api.ProviderSpec{
@@ -66,17 +72,66 @@ var _ = Describe("Machine Controller", func() {
 		}
 		providerSpecRaw, _ = json.Marshal(providerSpec)
 
-		machineName      = "mock-machine-name"
-		machineClassName = "mock-machine-class-name"
-		providerID       = "cn-shanghai.i-mockinstanceid"
-		instanceID       = "i-mockinstanceid"
+		machine = &v1alpha1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: machineName,
+			},
+			Spec: v1alpha1.MachineSpec{
+				ProviderID: providerID,
+			},
+		}
+		machineClass = &v1alpha1.MachineClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: machineClassName,
+			},
+			ProviderSpec: runtime.RawExtension{
+				Raw: providerSpecRaw,
+			},
+		}
+		providerSecret = &corev1.Secret{}
 
-		ctx  = context.Background()
-		ctrl *gomock.Controller
+		runInstancesRequest = &ecs.RunInstancesRequest{}
+		runInstanceResponse = &ecs.RunInstancesResponse{
+			InstanceIdSets: ecs.InstanceIdSets{
+				InstanceIdSet: []string{
+					instanceID,
+				},
+			},
+		}
+
+		deleteInstanceRequest = &ecs.DeleteInstanceRequest{
+			InstanceId: instanceID,
+			Force:      requests.NewBoolean(true),
+		}
+		deleteInstanceResponse = &ecs.DeleteInstanceResponse{}
+
+		describeInstanceRequest = &ecs.DescribeInstancesRequest{
+			InstanceIds: "[\"" + instanceID + "\"]",
+		}
+		describeInstanceResponse = &ecs.DescribeInstancesResponse{
+			Instances: ecs.Instances{
+				Instance: []ecs.Instance{
+					{
+						Status:       "Running",
+						InstanceId:   instanceID,
+						InstanceName: machineName,
+					},
+				},
+			},
+		}
+
+		ctx               = context.Background()
+		ctrl              *gomock.Controller
+		mockPluginSPI     *mockspi.MockPluginSPI
+		mockECSClient     *mockclient.MockECSClient
+		mockMachinePlugin driver.Driver
 	)
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
+		mockPluginSPI = mockspi.NewMockPluginSPI(ctrl)
+		mockECSClient = mockclient.NewMockECSClient(ctrl)
+		mockMachinePlugin = NewAlicloudPlugin(mockPluginSPI)
 	})
 
 	AfterEach(func() {
@@ -85,38 +140,14 @@ var _ = Describe("Machine Controller", func() {
 
 	It("should create machine successfully", func() {
 		var (
-			mockPluginSPI     = mockspi.NewMockPluginSPI(ctrl)
-			mockECSClient     = mockclient.NewMockECSClient(ctrl)
-			mockMachinePlugin = NewAlicloudPlugin(mockPluginSPI)
-
-			runInstancesRequest = &ecs.RunInstancesRequest{}
-			runInstanceResponse = &ecs.RunInstancesResponse{
-				InstanceIdSets: ecs.InstanceIdSets{
-					InstanceIdSet: []string{
-						instanceID,
-					},
-				},
-			}
-
 			createMachineRequest = driver.CreateMachineRequest{
-				Machine: &v1alpha1.Machine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: machineName,
-					},
-				},
-				MachineClass: &v1alpha1.MachineClass{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: machineClassName,
-					},
-					ProviderSpec: runtime.RawExtension{
-						Raw: providerSpecRaw,
-					},
-				},
-				Secret: &corev1.Secret{},
+				Machine:      machine,
+				MachineClass: machineClass,
+				Secret:       providerSecret,
 			}
 			createMachineResponse = &driver.CreateMachineResponse{
-				ProviderID:     "cn-shanghai.i-mockinstanceid",
-				NodeName:       "izmockinstanceidz",
+				ProviderID:     providerID,
+				NodeName:       nodeName,
 				LastKnownState: "ECS instance i-mockinstanceid created for machine mock-machine-name",
 			}
 		)
@@ -134,48 +165,10 @@ var _ = Describe("Machine Controller", func() {
 
 	It("should delete machine successfully", func() {
 		var (
-			mockPluginSPI     = mockspi.NewMockPluginSPI(ctrl)
-			mockECSClient     = mockclient.NewMockECSClient(ctrl)
-			mockMachinePlugin = NewAlicloudPlugin(mockPluginSPI)
-
-			describeInstanceRequest = &ecs.DescribeInstancesRequest{
-				InstanceIds: "[\"" + instanceID + "\"]",
-			}
-			describeInstanceResponse = &ecs.DescribeInstancesResponse{
-				Instances: ecs.Instances{
-					Instance: []ecs.Instance{
-						{
-							Status:     "Running",
-							InstanceId: instanceID,
-						},
-					},
-				},
-			}
-
-			deleteInstanceRequest = &ecs.DeleteInstanceRequest{
-				InstanceId: instanceID,
-				Force:      requests.NewBoolean(true),
-			}
-			deleteInstanceResponse = &ecs.DeleteInstanceResponse{}
-
-			deleteMachineRequest = driver.DeleteMachineRequest{
-				Machine: &v1alpha1.Machine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: machineName,
-					},
-					Spec: v1alpha1.MachineSpec{
-						ProviderID: providerID,
-					},
-				},
-				MachineClass: &v1alpha1.MachineClass{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: machineClassName,
-					},
-					ProviderSpec: runtime.RawExtension{
-						Raw: providerSpecRaw,
-					},
-				},
-				Secret: &corev1.Secret{},
+			deleteMachineRequest = &driver.DeleteMachineRequest{
+				Machine:      machine,
+				MachineClass: machineClass,
+				Secret:       providerSecret,
 			}
 			deleteMachineResponse = &driver.DeleteMachineResponse{
 				LastKnownState: "ECS instance i-mockinstanceid deleted for machine mock-machine-name",
@@ -190,16 +183,13 @@ var _ = Describe("Machine Controller", func() {
 			mockECSClient.EXPECT().DeleteInstance(deleteInstanceRequest).Return(deleteInstanceResponse, nil),
 		)
 
-		response, err := mockMachinePlugin.DeleteMachine(ctx, &deleteMachineRequest)
+		response, err := mockMachinePlugin.DeleteMachine(ctx, deleteMachineRequest)
 		Expect(err).To(BeNil())
 		Expect(response).To(Equal(deleteMachineResponse))
 	})
 
 	It("should migrate old machine class to the new one", func() {
 		var (
-			mockPluginSPI     = mockspi.NewMockPluginSPI(ctrl)
-			mockMachinePlugin = NewAlicloudPlugin(mockPluginSPI)
-
 			alicloudMachineClassSpec = &v1alpha1.AlicloudMachineClassSpec{
 				ImageID:                 "m-uf6jf6utod2nfs9x21iwse",
 				InstanceType:            "ecs.g6.large",
@@ -253,5 +243,92 @@ var _ = Describe("Machine Controller", func() {
 		Expect(err).To(BeNil())
 		Expect(response).To(Equal(migrateMachineClassResponse))
 		Expect(migrateMachineClassRequest.MachineClass).To(Equal(machineClass))
+	})
+
+	It("should get machine status successfully", func() {
+		var (
+			getMachineStatusRequest = &driver.GetMachineStatusRequest{
+				Machine:      machine,
+				MachineClass: machineClass,
+				Secret:       providerSecret,
+			}
+			getMahineStatusResponse = &driver.GetMachineStatusResponse{
+				ProviderID: providerID,
+				NodeName:   nodeName,
+			}
+		)
+
+		gomock.InOrder(
+			mockPluginSPI.EXPECT().NewECSClient(getMachineStatusRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
+			mockPluginSPI.EXPECT().NewDescribeInstancesRequest(getMachineStatusRequest.Machine.Name, "", providerSpec.Tags).Return(describeInstanceRequest, nil),
+			mockECSClient.EXPECT().DescribeInstances(describeInstanceRequest).Return(describeInstanceResponse, nil),
+		)
+
+		response, err := mockMachinePlugin.GetMachineStatus(ctx, getMachineStatusRequest)
+		Expect(err).To(BeNil())
+		Expect(response).To(Equal(getMahineStatusResponse))
+	})
+
+	It("should list machines successfully", func() {
+		var (
+			listMachinesRequest = &driver.ListMachinesRequest{
+				MachineClass: machineClass,
+				Secret:       providerSecret,
+			}
+			listMachinesResponse = &driver.ListMachinesResponse{
+				MachineList: map[string]string{
+					providerID: machineName,
+				},
+			}
+		)
+
+		gomock.InOrder(
+			mockPluginSPI.EXPECT().NewECSClient(listMachinesRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
+			mockPluginSPI.EXPECT().NewDescribeInstancesRequest("", "", providerSpec.Tags).Return(describeInstanceRequest, nil),
+			mockECSClient.EXPECT().DescribeInstances(describeInstanceRequest).Return(describeInstanceResponse, nil),
+		)
+
+		response, err := mockMachinePlugin.ListMachines(ctx, listMachinesRequest)
+		Expect(err).To(BeNil())
+		Expect(response).To(Equal(listMachinesResponse))
+	})
+
+	It("should get volume IDs successfully", func() {
+		var (
+			getVolumeIDsRequest = &driver.GetVolumeIDsRequest{
+				PVSpecs: []*corev1.PersistentVolumeSpec{
+					{
+						PersistentVolumeSource: corev1.PersistentVolumeSource{
+							FlexVolume: &corev1.FlexPersistentVolumeSource{
+								Driver: "alicloud/disk",
+								FSType: "ext4",
+								Options: map[string]string{
+									"volumeId": "d-mockflexvolumeid",
+								},
+							},
+						},
+					},
+					{
+						PersistentVolumeSource: corev1.PersistentVolumeSource{
+							CSI: &corev1.CSIPersistentVolumeSource{
+								Driver:       spi.AlicloudDriverName,
+								FSType:       "ext4",
+								VolumeHandle: "d-mockcsivolumeid",
+							},
+						},
+					},
+				},
+			}
+			getVolumeIDsResponse = &driver.GetVolumeIDsResponse{
+				VolumeIDs: []string{
+					"d-mockflexvolumeid",
+					"d-mockcsivolumeid",
+				},
+			}
+		)
+
+		response, err := mockMachinePlugin.GetVolumeIDs(ctx, getVolumeIDsRequest)
+		Expect(err).To(BeNil())
+		Expect(response).To(Equal(getVolumeIDsResponse))
 	})
 })
