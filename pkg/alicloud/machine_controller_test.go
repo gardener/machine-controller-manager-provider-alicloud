@@ -21,10 +21,15 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	api "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/apis"
-	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/mock"
+	mockclient "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/mock/client"
+	mockspi "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/mock/spi"
+	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -59,41 +64,40 @@ var _ = Describe("Machine Controller", func() {
 				Size:     50,
 			},
 		}
-		alicloudMachineClassSpec = &v1alpha1.AlicloudMachineClassSpec{
-			ImageID:                 "m-uf6jf6utod2nfs9x21iwse",
-			InstanceType:            "ecs.g6.large",
-			Region:                  "cn-shanghai",
-			ZoneID:                  "cn-shanghai-e",
-			SecurityGroupID:         "sg-uf69t4txlz6r18ybzxbx",
-			VSwitchID:               "vsw-uf6s1fjxxks65rk1tkrpm",
-			InstanceChargeType:      "PostPaid",
-			InternetChargeType:      "PayByTraffic",
-			InternetMaxBandwidthIn:  &internetMaxBandwidthIn,
-			InternetMaxBandwidthOut: &internetMaxBandwidthOut,
-			SpotStrategy:            "NoSpot",
-			KeyPairName:             "shoot-ssh-publickey",
-			Tags: map[string]string{
-				"kubernetes.io/cluster/shoot--mcm":     "1",
-				"kubernetes.io/role/worker/shoot--mcm": "1",
-			},
-			SystemDisk: &v1alpha1.AlicloudSystemDisk{
-				Category: "cloud_efficiency",
-				Size:     50,
-			},
-		}
 		providerSpecRaw, _ = json.Marshal(providerSpec)
 
 		machineName      = "mock-machine-name"
 		machineClassName = "mock-machine-class-name"
+		providerID       = "cn-shanghai.i-mockinstanceid"
+		instanceID       = "i-mockinstanceid"
 
-		providerId = "cn-shanghai.i-mockinstanceid"
-
-		ctx               = context.Background()
-		MachinePluginMock = NewAlicloudPlugin(&mock.PluginSPIMock{})
+		ctx  = context.Background()
+		ctrl *gomock.Controller
 	)
+
+	BeforeEach(func() {
+		ctrl = gomock.NewController(GinkgoT())
+	})
+
+	AfterEach(func() {
+		ctrl.Finish()
+	})
 
 	It("should create machine successfully", func() {
 		var (
+			mockPluginSPI     = mockspi.NewMockPluginSPI(ctrl)
+			mockECSClient     = mockclient.NewMockECSClient(ctrl)
+			mockMachinePlugin = NewAlicloudPlugin(mockPluginSPI)
+
+			runInstancesRequest = &ecs.RunInstancesRequest{}
+			runInstanceResponse = &ecs.RunInstancesResponse{
+				InstanceIdSets: ecs.InstanceIdSets{
+					InstanceIdSet: []string{
+						instanceID,
+					},
+				},
+			}
+
 			createMachineRequest = driver.CreateMachineRequest{
 				Machine: &v1alpha1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -117,20 +121,50 @@ var _ = Describe("Machine Controller", func() {
 			}
 		)
 
-		response, err := MachinePluginMock.CreateMachine(ctx, &createMachineRequest)
+		gomock.InOrder(
+			mockPluginSPI.EXPECT().NewECSClient(createMachineRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
+			mockPluginSPI.EXPECT().NewRunInstancesRequest(providerSpec, createMachineRequest.Machine.Name, createMachineRequest.Secret.Data[spi.AlicloudUserData]).Return(runInstancesRequest, nil),
+			mockECSClient.EXPECT().RunInstances(runInstancesRequest).Return(runInstanceResponse, nil),
+		)
+
+		response, err := mockMachinePlugin.CreateMachine(ctx, &createMachineRequest)
 		Expect(err).To(BeNil())
 		Expect(response).To(Equal(createMachineResponse))
 	})
 
 	It("should delete machine successfully", func() {
 		var (
+			mockPluginSPI     = mockspi.NewMockPluginSPI(ctrl)
+			mockECSClient     = mockclient.NewMockECSClient(ctrl)
+			mockMachinePlugin = NewAlicloudPlugin(mockPluginSPI)
+
+			describeInstanceRequest = &ecs.DescribeInstancesRequest{
+				InstanceIds: "[\"" + instanceID + "\"]",
+			}
+			describeInstanceResponse = &ecs.DescribeInstancesResponse{
+				Instances: ecs.Instances{
+					Instance: []ecs.Instance{
+						{
+							Status:     "Running",
+							InstanceId: instanceID,
+						},
+					},
+				},
+			}
+
+			deleteInstanceRequest = &ecs.DeleteInstanceRequest{
+				InstanceId: instanceID,
+				Force:      requests.NewBoolean(true),
+			}
+			deleteInstanceResponse = &ecs.DeleteInstanceResponse{}
+
 			deleteMachineRequest = driver.DeleteMachineRequest{
 				Machine: &v1alpha1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: machineName,
 					},
 					Spec: v1alpha1.MachineSpec{
-						ProviderID: providerId,
+						ProviderID: providerID,
 					},
 				},
 				MachineClass: &v1alpha1.MachineClass{
@@ -148,13 +182,47 @@ var _ = Describe("Machine Controller", func() {
 			}
 		)
 
-		response, err := MachinePluginMock.DeleteMachine(ctx, &deleteMachineRequest)
+		gomock.InOrder(
+			mockPluginSPI.EXPECT().NewECSClient(deleteMachineRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
+			mockPluginSPI.EXPECT().NewDescribeInstancesRequest("", instanceID, providerSpec.Tags).Return(describeInstanceRequest, nil),
+			mockECSClient.EXPECT().DescribeInstances(describeInstanceRequest).Return(describeInstanceResponse, nil),
+			mockPluginSPI.EXPECT().NewDeleteInstanceRequest(instanceID, true).Return(deleteInstanceRequest, nil),
+			mockECSClient.EXPECT().DeleteInstance(deleteInstanceRequest).Return(deleteInstanceResponse, nil),
+		)
+
+		response, err := mockMachinePlugin.DeleteMachine(ctx, &deleteMachineRequest)
 		Expect(err).To(BeNil())
 		Expect(response).To(Equal(deleteMachineResponse))
 	})
 
 	It("should migrate old machine class to the new one", func() {
 		var (
+			mockPluginSPI     = mockspi.NewMockPluginSPI(ctrl)
+			mockMachinePlugin = NewAlicloudPlugin(mockPluginSPI)
+
+			alicloudMachineClassSpec = &v1alpha1.AlicloudMachineClassSpec{
+				ImageID:                 "m-uf6jf6utod2nfs9x21iwse",
+				InstanceType:            "ecs.g6.large",
+				Region:                  "cn-shanghai",
+				ZoneID:                  "cn-shanghai-e",
+				SecurityGroupID:         "sg-uf69t4txlz6r18ybzxbx",
+				VSwitchID:               "vsw-uf6s1fjxxks65rk1tkrpm",
+				InstanceChargeType:      "PostPaid",
+				InternetChargeType:      "PayByTraffic",
+				InternetMaxBandwidthIn:  &internetMaxBandwidthIn,
+				InternetMaxBandwidthOut: &internetMaxBandwidthOut,
+				SpotStrategy:            "NoSpot",
+				KeyPairName:             "shoot-ssh-publickey",
+				Tags: map[string]string{
+					"kubernetes.io/cluster/shoot--mcm":     "1",
+					"kubernetes.io/role/worker/shoot--mcm": "1",
+				},
+				SystemDisk: &v1alpha1.AlicloudSystemDisk{
+					Category: "cloud_efficiency",
+					Size:     50,
+				},
+			}
+
 			migrateMachineClassRequest = &driver.GenerateMachineClassForMigrationRequest{
 				ProviderSpecificMachineClass: &v1alpha1.AlicloudMachineClass{
 					ObjectMeta: metav1.ObjectMeta{
@@ -180,7 +248,8 @@ var _ = Describe("Machine Controller", func() {
 
 			migrateMachineClassResponse = &driver.GenerateMachineClassForMigrationResponse{}
 		)
-		response, err := MachinePluginMock.GenerateMachineClassForMigration(ctx, migrateMachineClassRequest)
+
+		response, err := mockMachinePlugin.GenerateMachineClassForMigration(ctx, migrateMachineClassRequest)
 		Expect(err).To(BeNil())
 		Expect(response).To(Equal(migrateMachineClassResponse))
 		Expect(migrateMachineClassRequest.MachineClass).To(Equal(machineClass))
