@@ -45,7 +45,7 @@ const (
 	AlicloudAlternativeAccessKeySecret = "accessKeySecret"
 	// AlicloudUserData is a constant for user data
 	AlicloudUserData string = "userData"
-	// alicloudDriverName is the name of the CSI driver for Alibaba Cloud
+	// AlicloudDriverName is the name of the CSI driver for Alibaba Cloud
 	AlicloudDriverName = "diskplugin.csi.alibabacloud.com"
 )
 

@@ -37,7 +37,7 @@ func (pluginSPIMock *PluginSPIMock) NewRunInstancesRequest(providerSpec *api.Pro
 	return pluginSPI.NewRunInstancesRequest(providerSpec, machineName, userData)
 }
 
-// NewRunInstancesRequest returns a mock request of describing instances.
+// NewDescribeInstancesRequest returns a mock request of describing instances.
 func (pluginSPIMock *PluginSPIMock) NewDescribeInstancesRequest(machineName, providerID string, tags map[string]string) (*ecs.DescribeInstancesRequest, error) {
 	pluginSPI := spi.PluginSPIImpl{}
 	return pluginSPI.NewDescribeInstancesRequest(machineName, providerID, tags)
@@ -55,7 +55,7 @@ func (pluginSPIMock *PluginSPIMock) NewInstanceDataDisks(disks []api.AlicloudDat
 	return pluginSPI.NewInstanceDataDisks(disks, machineName)
 }
 
-// NewInstanceDataDisks return a mock tags
+// NewRunInstanceTags return a mock tags
 func (pluginSPIMock *PluginSPIMock) NewRunInstanceTags(tags map[string]string) ([]ecs.RunInstancesTag, error) {
 	pluginSPI := spi.PluginSPIImpl{}
 	return pluginSPI.NewRunInstanceTags(tags)
