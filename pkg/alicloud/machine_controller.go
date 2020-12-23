@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package provider contains the cloud provider specific implementations to manage machines
+// Package alicloud contains the cloud provider specific implementations to manage machines
 package alicloud
 
 import (

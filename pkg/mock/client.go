@@ -23,6 +23,7 @@ import (
 // ClientImplMock is the mock implement of ECSClient interface
 type ClientImplMock struct{}
 
+// RunInstances mock method
 func (mockClient *ClientImplMock) RunInstances(request *ecs.RunInstancesRequest) (*ecs.RunInstancesResponse, error) {
 	return &ecs.RunInstancesResponse{
 		InstanceIdSets: ecs.InstanceIdSets{
@@ -31,6 +32,7 @@ func (mockClient *ClientImplMock) RunInstances(request *ecs.RunInstancesRequest)
 	}, nil
 }
 
+// DescribeInstances mock method
 func (mockClient *ClientImplMock) DescribeInstances(request *ecs.DescribeInstancesRequest) (*ecs.DescribeInstancesResponse, error) {
 	var response ecs.DescribeInstancesResponse
 	if len(request.InstanceIds) == 0 {
@@ -55,6 +57,7 @@ func (mockClient *ClientImplMock) DescribeInstances(request *ecs.DescribeInstanc
 	return &response, nil
 }
 
+// DeleteInstance mock method
 func (mockClient *ClientImplMock) DeleteInstance(request *ecs.DeleteInstanceRequest) (*ecs.DeleteInstanceResponse, error) {
 	return &ecs.DeleteInstanceResponse{}, nil
 }

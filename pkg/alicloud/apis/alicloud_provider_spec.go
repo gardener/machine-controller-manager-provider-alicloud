@@ -14,6 +14,7 @@ limitations under the License.
 package api
 
 const (
+	// V1alpha1 is the constant for API version of machine controller manager
 	V1alpha1 = "mcm.gardener.cloud/v1alpha1"
 )
 
@@ -39,6 +40,7 @@ type ProviderSpec struct {
 	KeyPairName             string              `json:"keyPairName"`
 }
 
+// AlicloudDataDisk describes DataDisk for Alicloud.
 type AlicloudDataDisk struct {
 	Name               string `json:"name,omitEmpty"`
 	Category           string `json:"category,omitEmpty"`

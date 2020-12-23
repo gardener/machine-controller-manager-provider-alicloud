@@ -121,16 +121,15 @@ var _ = Describe("Plugin SPI", func() {
 		Expect(err).To(BeNil())
 		Expect(request.InstanceName).To(BeEmpty())
 		Expect(request.InstanceIds).To(BeEmpty())
-		Expect(request.Tag).To(Equal(&[]ecs.DescribeInstancesTag{
-			{
+		Expect(*request.Tag).To(ConsistOf(
+			ecs.DescribeInstancesTag{
 				Key:   "kubernetes.io/cluster/shoot--mcm",
 				Value: "1",
-			},
-			{
+			}, ecs.DescribeInstancesTag{
 				Key:   "kubernetes.io/role/worker/shoot--mcm",
 				Value: "1",
 			},
-		}))
+		))
 	})
 
 	It("should generate request of deleting instance", func() {
