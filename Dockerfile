@@ -7,7 +7,7 @@ COPY . .
 RUN .ci/build
 
 #############      base                                     #############
-FROM alpine:3.11.2 as base
+FROM alpine:3.12.1 as base
 
 RUN apk add --update bash curl tzdata
 WORKDIR /
