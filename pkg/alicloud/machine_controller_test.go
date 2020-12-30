@@ -319,16 +319,10 @@ var _ = Describe("Machine Controller", func() {
 					},
 				},
 			}
-			getVolumeIDsResponse = &driver.GetVolumeIDsResponse{
-				VolumeIDs: []string{
-					"d-mockflexvolumeid",
-					"d-mockcsivolumeid",
-				},
-			}
 		)
 
 		response, err := mockMachinePlugin.GetVolumeIDs(ctx, getVolumeIDsRequest)
 		Expect(err).To(BeNil())
-		Expect(response).To(Equal(getVolumeIDsResponse))
+		Expect(response.VolumeIDs).To(ConsistOf("d-mockflexvolumeid", "d-mockcsivolumeid"))
 	})
 })
