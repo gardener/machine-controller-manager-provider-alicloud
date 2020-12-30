@@ -88,16 +88,15 @@ var _ = Describe("Plugin SPI", func() {
 		Expect(request.SystemDiskCategory).To(Equal("cloud_efficiency"))
 		Expect(request.SystemDiskSize).To(Equal("50"))
 		Expect(request.DataDisk).To(BeNil())
-		Expect(request.Tag).To(Equal(&[]ecs.RunInstancesTag{
-			{
+		Expect(*request.Tag).To(ConsistOf(
+			ecs.RunInstancesTag {
 				Key:   "kubernetes.io/cluster/shoot--mcm",
 				Value: "1",
-			},
-			{
+			}, ecs.RunInstancesTag {
 				Key:   "kubernetes.io/role/worker/shoot--mcm",
 				Value: "1",
 			},
-		}))
+		))
 	})
 
 	It("should generate request of describing instance by machine Name", func() {
@@ -142,26 +141,24 @@ var _ = Describe("Plugin SPI", func() {
 	It("should generate instance data disks", func() {
 		dataDisks := pluginSPI.NewInstanceDataDisks(alicloudDataDisks, machineName)
 		Expect(dataDisks).NotTo(BeEmpty())
-		Expect(dataDisks).To(Equal([]ecs.RunInstancesDataDisk{
-			{
-				Category:           "DiskEphemeralSSD",
-				Encrypted:          "true",
-				DiskName:           "plugin-test-machine-disk-1-data-disk",
-				Size:               "50",
-				DeleteWithInstance: "",
-			},
-			{
-				Encrypted:          "true",
-				DiskName:           "plugin-test-machine-disk-2-data-disk",
-				Size:               "100",
-				DeleteWithInstance: "false",
-			},
-			{
-				Encrypted:          "false",
-				DiskName:           "plugin-test-machine-disk-3-data-disk",
-				Size:               "20",
-				DeleteWithInstance: "true",
-			},
-		}))
+		Expect(dataDisks).To(ConsistOf(
+			ecs.RunInstancesDataDisk {
+					Category:           "DiskEphemeralSSD",
+					Encrypted:          "true",
+					DiskName:           "plugin-test-machine-disk-1-data-disk",
+					Size:               "50",
+					DeleteWithInstance: "",
+				}, ecs.RunInstancesDataDisk{
+					Encrypted:          "true",
+					DiskName:           "plugin-test-machine-disk-2-data-disk",
+					Size:               "100",
+					DeleteWithInstance: "false",
+				}, ecs.RunInstancesDataDisk{
+					Encrypted:          "false",
+					DiskName:           "plugin-test-machine-disk-3-data-disk",
+					Size:               "20",
+					DeleteWithInstance: "true",
+				},
+		))
 	})
 })
