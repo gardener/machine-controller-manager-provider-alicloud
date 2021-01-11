@@ -14,14 +14,13 @@
 
 BINARY_PATH         := bin/
 COVERPROFILE        := test/output/coverprofile.out
-IMAGE_REPOSITORY    := <link-to-image-repo>
+IMAGE_REPOSITORY    := eu.gcr.io/gardener-project/gardener/machine-controller-manager-provider-alicloud
 IMAGE_TAG           := $(shell cat VERSION)
-REPO_ROOT           := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-PROVIDER_NAME       := SampleProvider
+PROVIDER_NAME       := alicloud
 PROJECT_NAME        := gardener
-CONTROL_NAMESPACE  := default
-CONTROL_KUBECONFIG := dev/target-kubeconfig.yaml
-TARGET_KUBECONFIG  := dev/target-kubeconfig.yaml
+CONTROL_NAMESPACE   := default
+CONTROL_KUBECONFIG  := dev/target-kubeconfig.yaml
+TARGET_KUBECONFIG   := dev/target-kubeconfig.yaml
 
 #########################################
 # Rules for running helper scripts
