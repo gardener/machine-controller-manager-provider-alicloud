@@ -3,6 +3,7 @@ kind: MachineClass
 metadata:
   name: {{ $machineClass.name }}
   namespace: {{ $.Release.Namespace }}
+provider: Alicloud
 providerSpec:
   imageID: {{ $machineClass.imageID }}
   instanceType: {{ $machineClass.instanceType }}
