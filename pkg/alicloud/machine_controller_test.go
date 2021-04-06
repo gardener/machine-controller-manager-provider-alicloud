@@ -81,6 +81,7 @@ var _ = Describe("Machine Controller", func() {
 			},
 		}
 		machineClass = &v1alpha1.MachineClass{
+			Provider: ProviderAlicloud,
 			ObjectMeta: metav1.ObjectMeta{
 				Name: machineClassName,
 			},
@@ -88,6 +89,7 @@ var _ = Describe("Machine Controller", func() {
 				Raw: providerSpecRaw,
 			},
 		}
+
 		providerSecret = &corev1.Secret{}
 
 		runInstancesRequest = &ecs.RunInstancesRequest{}
@@ -220,7 +222,9 @@ var _ = Describe("Machine Controller", func() {
 					},
 					Spec: *alicloudMachineClassSpec,
 				},
-				MachineClass: &v1alpha1.MachineClass{},
+				MachineClass: &v1alpha1.MachineClass{
+					Provider: ProviderAlicloud,
+				},
 				ClassSpec: &v1alpha1.ClassSpec{
 					Kind: AlicloudMachineClassKind,
 				},
