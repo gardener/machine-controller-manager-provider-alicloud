@@ -65,9 +65,10 @@ func (plugin *MachinePlugin) CreateMachine(ctx context.Context, req *driver.Crea
 	klog.V(2).Infof("Machine creation request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine creation request has been processed for %q", req.Machine.Name)
 
-	// Check if incoming CR is a CR we support
+	// Check if provider in the MachineClass is the provider we support
 	if req.MachineClass.Provider != ProviderAlicloud {
-		return nil, fmt.Errorf("Requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
+		err := fmt.Errorf("Requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	providerSpec, err := decodeProviderSpec(req.MachineClass)
@@ -117,9 +118,10 @@ func (plugin *MachinePlugin) DeleteMachine(ctx context.Context, req *driver.Dele
 	klog.V(2).Infof("Machine deletion request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine deletion request has been processed for %q", req.Machine.Name)
 
-	// Check if incoming CR is a CR we support
+	// Check if provider in the MachineClass is the provider we support
 	if req.MachineClass.Provider != ProviderAlicloud {
-		return nil, fmt.Errorf("Requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
+		err := fmt.Errorf("Requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	providerSpec, err := decodeProviderSpec(req.MachineClass)
@@ -190,9 +192,10 @@ func (plugin *MachinePlugin) GetMachineStatus(ctx context.Context, req *driver.G
 	klog.V(2).Infof("Get request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
 
-	// Check if incoming CR is a CR we support
+	// Check if provider in the MachineClass is the provider we support
 	if req.MachineClass.Provider != ProviderAlicloud {
-		return nil, fmt.Errorf("Requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
+		err := fmt.Errorf("Requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	klog.V(2).Infof("Machine name found with %q", req.Machine.Name)
@@ -256,9 +259,10 @@ func (plugin *MachinePlugin) ListMachines(ctx context.Context, req *driver.ListM
 	klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
 	defer klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
 
-	// Check if incoming CR is a CR we support
+	// Check if provider in the MachineClass is the provider we support
 	if req.MachineClass.Provider != ProviderAlicloud {
-		return nil, fmt.Errorf("Requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
+		err := fmt.Errorf("Requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	providerSpec, err := decodeProviderSpec(req.MachineClass)
@@ -348,11 +352,6 @@ func (plugin *MachinePlugin) GenerateMachineClassForMigration(ctx context.Contex
 	// Log messages to track start and end of request
 	klog.V(2).Infof("MigrateMachineClass request has been recieved for %q", req.ClassSpec)
 	defer klog.V(2).Infof("MigrateMachineClass request has been processed successfully for %q", req.ClassSpec)
-
-	// Check if incoming CR is a CR we support
-	if req.MachineClass.Provider != ProviderAlicloud {
-		return nil, fmt.Errorf("Requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
-	}
 
 	alicloudMachineClass := req.ProviderSpecificMachineClass.(*v1alpha1.AlicloudMachineClass)
 	if req.ClassSpec.Kind != AlicloudMachineClassKind {
