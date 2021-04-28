@@ -52,6 +52,7 @@ type AlicloudDataDisk struct {
 
 // AlicloudSystemDisk describes SystemDisk for Alicloud.
 type AlicloudSystemDisk struct {
-	Category string `json:"category"`
-	Size     int    `json:"size"`
+	Category  string `json:"category"`
+	Size      int    `json:"size"`
+	Encrypted bool   `json:"encrypted,omitEmpty"`
 }
