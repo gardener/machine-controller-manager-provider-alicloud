@@ -76,7 +76,7 @@ func (plugin *MachinePlugin) CreateMachine(ctx context.Context, req *driver.Crea
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	machineSpec := req.Machine.Spec.NodeTemplateSpec.Labels
+	machineSpecLabels := req.Machine.Spec.NodeTemplateSpec.Labels
 	for k, v := range machineSpec {
 		if _, ok := providerSpec.Tags[k]; !ok {
 			providerSpec.Tags[k] = v
