@@ -4,19 +4,17 @@ go 1.15
 
 require (
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20180828111155-cad214d7d71f
-	github.com/gardener/machine-controller-manager v0.39.0
+	github.com/gardener/machine-controller-manager v0.42.0
 	github.com/golang/mock v1.4.4
-	github.com/onsi/ginkgo v1.15.2
+	github.com/onsi/ginkgo v1.16.2
 	github.com/onsi/gomega v1.11.0
-	github.com/prometheus/client_golang v1.5.1 // indirect
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.5.1 // indirect
-	golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3
-	k8s.io/api v0.16.8
-	k8s.io/apimachinery v0.16.8
-	k8s.io/component-base v0.16.8
+	golang.org/x/lint v0.0.0-20200302205851-738671d3881b
+	k8s.io/api v0.20.6
+	k8s.io/apimachinery v0.20.6
+	k8s.io/component-base v0.20.6
 	k8s.io/klog v1.0.0
-	k8s.io/utils v0.0.0-20190801114015-581e00157fb1
+	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
 )
 
 replace (
