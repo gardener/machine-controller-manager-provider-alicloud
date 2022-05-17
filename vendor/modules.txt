@@ -87,6 +87,9 @@ github.com/beorn7/perks/quantile
 # github.com/cenkalti/backoff/v4 v4.1.0
 ## explicit; go 1.13
 github.com/cenkalti/backoff/v4
+# github.com/cespare/xxhash/v2 v2.1.2
+## explicit; go 1.11
+github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
@@ -296,8 +299,8 @@ github.com/packethost/packngo
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
-# github.com/prometheus/client_golang v1.12.1 => github.com/prometheus/client_golang v0.9.2
-## explicit
+# github.com/prometheus/client_golang v1.12.1 => github.com/prometheus/client_golang v1.12.1
+## explicit; go 1.13
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/promauto
@@ -888,7 +891,7 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
-# github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
+# github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.12.1
 # k8s.io/api => k8s.io/api v0.20.6
 # k8s.io/apimachinery => k8s.io/apimachinery v0.20.6
 # k8s.io/apiserver => k8s.io/apiserver v0.20.6
