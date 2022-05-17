@@ -31,6 +31,7 @@ require (
 	github.com/aws/aws-sdk-go v1.23.13 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.0 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/evanphx/json-patch v4.9.0+incompatible // indirect
 	github.com/form3tech-oss/jwt-go v3.2.2+incompatible // indirect
@@ -93,7 +94,7 @@ require (
 )
 
 replace (
-	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
+	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.12.1
 	k8s.io/api => k8s.io/api v0.20.6 // v0.20.6
 	k8s.io/apimachinery => k8s.io/apimachinery v0.20.6 // v0.20.6
 	k8s.io/apiserver => k8s.io/apiserver v0.20.6 // v0.20.6
