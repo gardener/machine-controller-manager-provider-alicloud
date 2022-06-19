@@ -57,9 +57,6 @@ func (r *ResourcesTrackerImpl) InitializeResourcesTracker(machineClass *v1alpha1
 
 // probeResources will look for resources currently available and returns them
 func (r *ResourcesTrackerImpl) probeResources() ([]string, []string, []string, []string, error) {
-	// Check for VM instances with matching tags/labels
-	// Describe volumes attached to VM instance & delete the volumes
-	// Finally delete the VM instance
 
 	integrationTestTag := "tag:kubernetes.io/role/integration-test"
 	integrationTestTagValue := "1"
@@ -89,15 +86,15 @@ func (r *ResourcesTrackerImpl) probeResources() ([]string, []string, []string, [
 // IsOrphanedResourcesAvailable checks whether there are any orphaned resources left.
 //If yes, then prints them and returns true. If not, then returns false
 func (r *ResourcesTrackerImpl) IsOrphanedResourcesAvailable() bool {
-	afterTestExecutionVMs, afterTestExecutionAvailDisks, afterTestExecutionAvailmachines, afterTestExecutionNICs, err := r.probeResources()
+	afterTestExecutionVMs, afterTestExecutionAvailDisks, afterTestExecutionAvailMachines, afterTestExecutionNICs, err := r.probeResources()
 	if err != nil {
 		fmt.Printf("Error probing orphaned resources: %s", err.Error())
 		return true
 	}
 
-	if afterTestExecutionVMs != nil || afterTestExecutionAvailDisks != nil || afterTestExecutionAvailmachines != nil || afterTestExecutionNICs != nil {
-		fmt.Printf("The following resources are orphans ... trying to delete them \n")
-		fmt.Printf("Virtual Machines: %v\nVolumes: %v\nNICs: %v\nMCM Machines %v\n ", afterTestExecutionVMs, afterTestExecutionAvailDisks, afterTestExecutionNICs, afterTestExecutionAvailmachines)
+	if afterTestExecutionVMs != nil || afterTestExecutionAvailDisks != nil || afterTestExecutionAvailMachines != nil || afterTestExecutionNICs != nil {
+		fmt.Printf("The following resources are orphans ... waiting till they get deleted or timeout happens \n")
+		fmt.Printf("Virtual Machines: %v\nVolumes: %v\nNICs: %v\nMCM Machines %v\n ", afterTestExecutionVMs, afterTestExecutionAvailDisks, afterTestExecutionNICs, afterTestExecutionAvailMachines)
 		return true
 	}
 

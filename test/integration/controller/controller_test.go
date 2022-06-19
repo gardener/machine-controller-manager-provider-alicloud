@@ -29,11 +29,6 @@ limitations under the License.
 	AfterSuite
 		- Delete the control and target clusters // As of now we are reusing the cluster so this is not required
 
-	Test: differentRegion Scheduling Strategy Test
-        1) Create machine in region other than where the target cluster exists. (e.g machine in eu-west-1 and target cluster exists in us-east-1)
-           Expected Output
-			 - should fail because no cluster in same region exists)
-
     Test: sameRegion Scheduling Strategy Test
         1) Create machine in same region/zone as target cluster and attach it to the cluster
            Expected Output

@@ -80,7 +80,7 @@ func getMachines(machineClass *v1alpha1.MachineClass, secretData map[string][]by
 	return machines, nil
 }
 
-// getOrphanesInstances returns list of Orphan resources that couldn't be deleted
+// getOrphanedInstances returns list of Orphan resources that couldn't be deleted.
 func getOrphanedInstances(tagName string, tagValue string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) ([]string, error) {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
 	var instancesID []string
@@ -100,12 +100,13 @@ func getOrphanedInstances(tagName string, tagValue string, machineClass *v1alpha
 	return instancesID, nil
 }
 
-// getOrphanesDisks returns list of Orphan disks
+// getOrphanedDisks returns list of Orphan disks.
 func getOrphanedDisks(tagName string, tagValue string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) ([]string, error) {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
 	var volumeID []string
 	var tags = &[]ecs.DescribeDisksTag{{Key: tagName, Value: tagValue}}
 	input := ecs.CreateDescribeDisksRequest()
+	input.Status = "Available"
 	input.Tag = tags
 	result, err := sess.DescribeDisks(input)
 	if err != nil {
@@ -120,19 +121,19 @@ func getOrphanedDisks(tagName string, tagValue string, machineClass *v1alpha1.Ma
 // getOrphanedNICs returns list of Orphan NICs
 func getOrphanedNICs(tagName string, tagValue string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) ([]string, error) {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
-	var NICIDs []string
+	var nicIDs []string
 	var tags = &[]ecs.DescribeNetworkInterfacesTag{{Key: tagName, Value: tagValue}}
 	input := ecs.CreateDescribeNetworkInterfacesRequest()
 	input.Tag = tags
 
 	result, err := sess.DescribeNetworkInterfaces(input)
 	if err != nil {
-		return NICIDs, err
+		return nicIDs, err
 	}
 	for _, nic := range result.NetworkInterfaceSets.NetworkInterfaceSet {
-		NICIDs = append(NICIDs, nic.NetworkInterfaceId)
+		nicIDs = append(nicIDs, nic.NetworkInterfaceId)
 	}
-	return NICIDs, nil
+	return nicIDs, nil
 }
 
 func cleanOrphanResources(instanceIds []string, volumeIds []string, NICIds []string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) (delErrInstanceId []string, delErrVolumeIds []string, delErrNICs []string) {
