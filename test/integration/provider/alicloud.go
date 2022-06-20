@@ -81,7 +81,7 @@ func getMachines(machineClass *v1alpha1.MachineClass, secretData map[string][]by
 	return machines, nil
 }
 
-// getOrphanedInstances returns list of Orphan resources that couldn't be deleted.
+// getOrphanedInstances returns list of Orphan resources.
 func getOrphanedInstances(tagName string, tagValue string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) ([]string, error) {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
 	var instancesID []string
