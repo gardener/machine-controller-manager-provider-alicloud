@@ -58,7 +58,7 @@ func (r *ResourcesTrackerImpl) InitializeResourcesTracker(machineClass *v1alpha1
 // probeResources will look for resources currently available and returns them
 func (r *ResourcesTrackerImpl) probeResources() ([]string, []string, []string, []string, error) {
 
-	integrationTestTag := "tag:kubernetes.io/role/integration-test"
+	integrationTestTag := "kubernetes.io/role/integration-test"
 	integrationTestTagValue := "1"
 
 	orphanVMs, err := getOrphanedInstances(integrationTestTag, integrationTestTagValue, r.MachineClass, r.SecretData)

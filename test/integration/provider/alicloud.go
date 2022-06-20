@@ -17,6 +17,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	api "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/apis"
 	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
@@ -86,7 +87,6 @@ func getOrphanedInstances(tagName string, tagValue string, machineClass *v1alpha
 	var instancesID []string
 	var tags = &[]ecs.DescribeInstancesTag{{Key: tagName, Value: tagValue}}
 	input := ecs.CreateDescribeInstancesRequest()
-	input.InstanceName = "instance-state-name"
 	input.Status = "running"
 	input.Tag = tags
 
@@ -140,18 +140,21 @@ func cleanOrphanResources(instanceIds []string, volumeIds []string, NICIds []str
 
 	for _, instanceId := range instanceIds {
 		if err := terminateInstance(instanceId, machineClass, secretData); err != nil {
+			fmt.Printf("error in deleting instance : %v", err)
 			delErrInstanceId = append(delErrInstanceId, instanceId)
 		}
 	}
 
 	for _, volumeId := range volumeIds {
 		if err := deleteVolume(volumeId, machineClass, secretData); err != nil {
+			fmt.Printf("error in deleting volume : %v", err)
 			delErrVolumeIds = append(delErrVolumeIds, volumeId)
 		}
 	}
 
 	for _, nicId := range NICIds {
 		if err := deleteNIC(nicId, machineClass, secretData); err != nil {
+			fmt.Printf("error in deleting volume : %v", err)
 			delErrNICs = append(delErrNICs, nicId)
 		}
 	}
@@ -161,7 +164,8 @@ func cleanOrphanResources(instanceIds []string, volumeIds []string, NICIds []str
 
 func deleteNIC(nicId string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) error {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
-	input := &ecs.DeleteNetworkInterfaceRequest{NetworkInterfaceId: nicId}
+	input := ecs.CreateDeleteNetworkInterfaceRequest()
+	input.NetworkInterfaceId = nicId
 	_, err := sess.DeleteNetworkInterface(input)
 	if err != nil {
 		return err
@@ -171,7 +175,8 @@ func deleteNIC(nicId string, machineClass *v1alpha1.MachineClass, secretData map
 
 func deleteVolume(diskId string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) error {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
-	input := &ecs.DeleteDiskRequest{DiskId: diskId}
+	input := ecs.CreateDeleteDiskRequest()
+	input.DiskId = diskId
 	_, err := sess.DeleteDisk(input)
 	if err != nil {
 		return err
@@ -181,7 +186,8 @@ func deleteVolume(diskId string, machineClass *v1alpha1.MachineClass, secretData
 
 func terminateInstance(instanceId string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) error {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
-	input := &ecs.DeleteInstanceRequest{InstanceId: instanceId}
+	input := ecs.CreateDeleteInstanceRequest()
+	input.InstanceId = instanceId
 	_, err := sess.DeleteInstance(input)
 	if err != nil {
 		return err
