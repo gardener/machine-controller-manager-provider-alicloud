@@ -1,18 +1,3 @@
-/*
-Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package provider
 
 import (
@@ -136,36 +121,36 @@ func getOrphanedNICs(tagName string, tagValue string, machineClass *v1alpha1.Mac
 	return nicIDs, nil
 }
 
-func cleanOrphanResources(instanceIds []string, volumeIds []string, NICIds []string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) (delErrInstanceId []string, delErrVolumeIds []string, delErrNICs []string) {
+func cleanOrphanResources(instanceIds []string, volumeIds []string, NICIds []string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) (delErrInstanceID []string, delErrVolumeIds []string, delErrNICs []string) {
 
-	for _, instanceId := range instanceIds {
-		if err := terminateInstance(instanceId, machineClass, secretData); err != nil {
+	for _, instanceID := range instanceIds {
+		if err := terminateInstance(instanceID, machineClass, secretData); err != nil {
 			fmt.Printf("error in deleting instance : %v", err)
-			delErrInstanceId = append(delErrInstanceId, instanceId)
+			delErrInstanceID = append(delErrInstanceID, instanceID)
 		}
 	}
 
-	for _, volumeId := range volumeIds {
-		if err := deleteVolume(volumeId, machineClass, secretData); err != nil {
+	for _, volumeID := range volumeIds {
+		if err := deleteVolume(volumeID, machineClass, secretData); err != nil {
 			fmt.Printf("error in deleting volume : %v", err)
-			delErrVolumeIds = append(delErrVolumeIds, volumeId)
+			delErrVolumeIds = append(delErrVolumeIds, volumeID)
 		}
 	}
 
-	for _, nicId := range NICIds {
-		if err := deleteNIC(nicId, machineClass, secretData); err != nil {
+	for _, nicID := range NICIds {
+		if err := deleteNIC(nicID, machineClass, secretData); err != nil {
 			fmt.Printf("error in deleting volume : %v", err)
-			delErrNICs = append(delErrNICs, nicId)
+			delErrNICs = append(delErrNICs, nicID)
 		}
 	}
 
 	return
 }
 
-func deleteNIC(nicId string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) error {
+func deleteNIC(nicID string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) error {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
 	input := ecs.CreateDeleteNetworkInterfaceRequest()
-	input.NetworkInterfaceId = nicId
+	input.NetworkInterfaceId = nicID
 	_, err := sess.DeleteNetworkInterface(input)
 	if err != nil {
 		return err
@@ -173,10 +158,10 @@ func deleteNIC(nicId string, machineClass *v1alpha1.MachineClass, secretData map
 	return nil
 }
 
-func deleteVolume(diskId string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) error {
+func deleteVolume(diskID string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) error {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
 	input := ecs.CreateDeleteDiskRequest()
-	input.DiskId = diskId
+	input.DiskId = diskID
 	_, err := sess.DeleteDisk(input)
 	if err != nil {
 		return err
@@ -184,10 +169,10 @@ func deleteVolume(diskId string, machineClass *v1alpha1.MachineClass, secretData
 	return nil
 }
 
-func terminateInstance(instanceId string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) error {
+func terminateInstance(instanceID string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) error {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
 	input := ecs.CreateDeleteInstanceRequest()
-	input.InstanceId = instanceId
+	input.InstanceId = instanceID
 	_, err := sess.DeleteInstance(input)
 	if err != nil {
 		return err

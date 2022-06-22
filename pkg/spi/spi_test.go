@@ -89,10 +89,10 @@ var _ = Describe("Plugin SPI", func() {
 		Expect(request.SystemDiskSize).To(Equal("50"))
 		Expect(request.DataDisk).To(BeNil())
 		Expect(*request.Tag).To(ConsistOf(
-			ecs.RunInstancesTag {
+			ecs.RunInstancesTag{
 				Key:   "kubernetes.io/cluster/shoot--mcm",
 				Value: "1",
-			}, ecs.RunInstancesTag {
+			}, ecs.RunInstancesTag{
 				Key:   "kubernetes.io/role/worker/shoot--mcm",
 				Value: "1",
 			},
@@ -142,23 +142,23 @@ var _ = Describe("Plugin SPI", func() {
 		dataDisks := pluginSPI.NewInstanceDataDisks(alicloudDataDisks, machineName)
 		Expect(dataDisks).NotTo(BeEmpty())
 		Expect(dataDisks).To(ConsistOf(
-			ecs.RunInstancesDataDisk {
-					Category:           "DiskEphemeralSSD",
-					Encrypted:          "true",
-					DiskName:           "plugin-test-machine-disk-1-data-disk",
-					Size:               "50",
-					DeleteWithInstance: "",
-				}, ecs.RunInstancesDataDisk{
-					Encrypted:          "true",
-					DiskName:           "plugin-test-machine-disk-2-data-disk",
-					Size:               "100",
-					DeleteWithInstance: "false",
-				}, ecs.RunInstancesDataDisk{
-					Encrypted:          "false",
-					DiskName:           "plugin-test-machine-disk-3-data-disk",
-					Size:               "20",
-					DeleteWithInstance: "true",
-				},
+			ecs.RunInstancesDataDisk{
+				Category:           "DiskEphemeralSSD",
+				Encrypted:          "true",
+				DiskName:           "plugin-test-machine-disk-1-data-disk",
+				Size:               "50",
+				DeleteWithInstance: "",
+			}, ecs.RunInstancesDataDisk{
+				Encrypted:          "true",
+				DiskName:           "plugin-test-machine-disk-2-data-disk",
+				Size:               "100",
+				DeleteWithInstance: "false",
+			}, ecs.RunInstancesDataDisk{
+				Encrypted:          "false",
+				DiskName:           "plugin-test-machine-disk-3-data-disk",
+				Size:               "20",
+				DeleteWithInstance: "true",
+			},
 		))
 	})
 })

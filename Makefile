@@ -37,6 +37,9 @@ MACHINE_CONTROLLER_MANAGER_DEPLOYMENT_NAME := machine-controller-manager
 #########################################
 # Rules for running helper scripts
 #########################################
+.PHONY: check
+check:
+	@.ci/check
 
 .PHONY: rename-project
 rename-project:
