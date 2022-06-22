@@ -22,9 +22,24 @@ CONTROL_NAMESPACE   := default
 CONTROL_KUBECONFIG  := dev/target-kubeconfig.yaml
 TARGET_KUBECONFIG   := dev/target-kubeconfig.yaml
 
+# Below ones are used in tests
+MACHINECLASS_V1 	:= dev/machineclassv1.yaml
+MACHINECLASS_V2 	:=
+MCM_IMAGE			:=
+MC_IMAGE			:=
+# MCM_IMAGE			:= eu.gcr.io/gardener-project/gardener/machine-controller-manager:v0.39.0
+# MC_IMAGE			:= $(IMAGE_REPOSITORY):v0.7.0
+LEADER_ELECT 	    := "true"
+# If Integration Test Suite is to be run locally against clusters then export the below variable
+# with MCM deployment name in the cluster
+MACHINE_CONTROLLER_MANAGER_DEPLOYMENT_NAME := machine-controller-manager
+
 #########################################
 # Rules for running helper scripts
 #########################################
+.PHONY: check
+check:
+	@.ci/check
 
 .PHONY: rename-project
 rename-project:
@@ -70,8 +85,20 @@ update-dependencies:
 
 .PHONY: test-unit
 test-unit:
-	.ci/test
+	@SKIP_INTEGRATION_TESTS=X .ci/test
 
+.PHONY: test-integration
+test-integration:
+	@if [[ -f $(PWD)/$(CONTROL_KUBECONFIG) ]]; then export CONTROL_KUBECONFIG=$(PWD)/$(CONTROL_KUBECONFIG); fi; \
+	if [[ -f $(PWD)/$(TARGET_KUBECONFIG) ]]; then export TARGET_KUBECONFIG=$(PWD)/$(TARGET_KUBECONFIG); fi; \
+	if [[ -f $(PWD)/$(MACHINECLASS_V1) ]]; then export MACHINECLASS_V1=$(PWD)/$(MACHINECLASS_V1); fi; \
+	if [[ -f $(PWD)/$(MACHINECLASS_V2) ]]; then export MACHINECLASS_V2=$(PWD)/$(MACHINECLASS_V2); fi; \
+	export MC_CONTAINER_IMAGE=$(MC_IMAGE); \
+	export MCM_CONTAINER_IMAGE=$(MCM_IMAGE); \
+	export CONTROL_CLUSTER_NAMESPACE=$(CONTROL_NAMESPACE); \
+	export MACHINE_CONTROLLER_MANAGER_DEPLOYMENT_NAME=$(MACHINE_CONTROLLER_MANAGER_DEPLOYMENT_NAME); \
+	export TAGS_ARE_STRINGS=$(TAGS_ARE_STRINGS); \
+	.ci/local_integration_test
 #########################################
 # Rules for build/release
 #########################################

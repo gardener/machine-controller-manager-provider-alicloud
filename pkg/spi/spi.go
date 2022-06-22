@@ -54,6 +54,10 @@ type ECSClient interface {
 	RunInstances(request *ecs.RunInstancesRequest) (*ecs.RunInstancesResponse, error)
 	DescribeInstances(request *ecs.DescribeInstancesRequest) (*ecs.DescribeInstancesResponse, error)
 	DeleteInstance(request *ecs.DeleteInstanceRequest) (*ecs.DeleteInstanceResponse, error)
+	DescribeDisks(request *ecs.DescribeDisksRequest) (*ecs.DescribeDisksResponse, error)
+	DeleteDisk(request *ecs.DeleteDiskRequest) (*ecs.DeleteDiskResponse, error)
+	DescribeNetworkInterfaces(request *ecs.DescribeNetworkInterfacesRequest) (*ecs.DescribeNetworkInterfacesResponse, error)
+	DeleteNetworkInterface(request *ecs.DeleteNetworkInterfaceRequest) (*ecs.DeleteNetworkInterfaceResponse, error)
 }
 
 // PluginSPI provides an interface to deal with cloud provider session
