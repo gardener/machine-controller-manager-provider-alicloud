@@ -58,7 +58,7 @@ github.com/evanphx/json-patch
 # github.com/fsnotify/fsnotify v1.4.9
 ## explicit; go 1.13
 github.com/fsnotify/fsnotify
-# github.com/gardener/machine-controller-manager v0.45.0
+# github.com/gardener/machine-controller-manager v0.46.0
 ## explicit; go 1.17
 github.com/gardener/machine-controller-manager/pkg/apis/machine
 github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1
@@ -73,7 +73,6 @@ github.com/gardener/machine-controller-manager/pkg/client/informers/externalvers
 github.com/gardener/machine-controller-manager/pkg/client/informers/externalversions/machine
 github.com/gardener/machine-controller-manager/pkg/client/informers/externalversions/machine/v1alpha1
 github.com/gardener/machine-controller-manager/pkg/client/listers/machine/v1alpha1
-github.com/gardener/machine-controller-manager/pkg/controller/autoscaler
 github.com/gardener/machine-controller-manager/pkg/fakeclient
 github.com/gardener/machine-controller-manager/pkg/features
 github.com/gardener/machine-controller-manager/pkg/handlers
@@ -441,8 +440,6 @@ google.golang.org/protobuf/types/descriptorpb
 google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/timestamppb
-# gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-## explicit; go 1.11
 # gopkg.in/inf.v0 v0.9.1
 ## explicit
 gopkg.in/inf.v0
