@@ -44,7 +44,8 @@ func DefaultLeaderElectionConfiguration() options.LeaderElectionConfiguration {
 		LeaseDuration: metav1.Duration{Duration: DefaultLeaseDuration},
 		RenewDeadline: metav1.Duration{Duration: DefaultRenewDeadline},
 		RetryPeriod:   metav1.Duration{Duration: DefaultRetryPeriod},
-		ResourceLock:  rl.LeasesResourceLock,
+		// TODO(acumino): migrate default to `leases` in one of the next releases
+		ResourceLock: rl.EndpointsLeasesResourceLock,
 	}
 }
 
