@@ -157,7 +157,7 @@ function run_integration_tests() {
     set -e
 
     if [ ${TEST_RESULT} -ne 0 ]; then
-        printf "\n\t\t\t${RED}Integration tests failed. Kindly check you PR${NC}\n"
+        printf "\n\t\t\t${RED}Integration tests failed. Kindly check your PR${NC}\n"
     else
         printf "Done with integration test\n"
     fi
