@@ -24,7 +24,7 @@ machine-controller-manager-provider-alicloud:
         image: 'golang:1.17.9'
         output_dir: 'binary'
       test:
-        image: 'golang:1.17.9'
+        image: 'eu.gcr.io/gardener-project/gardener/testmachinery/base-step:stable'
   jobs:
     head-update:
       traits:
