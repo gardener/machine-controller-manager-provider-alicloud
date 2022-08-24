@@ -91,13 +91,9 @@ function fetch_machine_class() {
     #bringing machineclass from secret server
     ${cli_path} config attribute --cfg-type kubernetes --cfg-name mcm-ci-ali-oot-target --key machineClass > ${SOURCE_PATH}/dev/v1machineclass.json
 
-    cat ${SOURCE_PATH}/dev/v1machineclass.json
-
     #convert json to yaml, so that machineclass can be parsed during integration-test
     yq e -P ${SOURCE_PATH}/dev/v1machineclass.json > ${SOURCE_PATH}/dev/v1machineclass_converted.yaml
-
-    cat ${SOURCE_PATH}/dev/v1machineclass_converted.yaml
-
+    yq -i e '.providerSpec.keyPairName |= null' ${SOURCE_PATH}/dev/v1machineclass_converted.yaml
 }
 
 function setup_environment() {
