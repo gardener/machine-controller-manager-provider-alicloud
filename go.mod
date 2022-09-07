@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20180828111155-cad214d7d71f
-	github.com/gardener/machine-controller-manager v0.46.1
+	github.com/gardener/machine-controller-manager v0.47.0
 	github.com/golang/mock v1.4.4
 	github.com/onsi/ginkgo v1.16.2
 	github.com/onsi/gomega v1.11.0
@@ -18,6 +18,7 @@ require (
 )
 
 require (
+	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20210428141323-04723f9f07d7 // indirect
 	github.com/acomagu/bufpipe v1.0.3 // indirect
