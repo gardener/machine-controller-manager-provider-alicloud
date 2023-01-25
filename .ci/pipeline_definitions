@@ -19,9 +19,9 @@ machine-controller-manager-provider-alicloud:
             image: 'eu.gcr.io/gardener-project/gardener/machine-controller-manager-provider-alicloud'
     steps:
       check:
-        image: 'golang:1.19.2'
+        image: 'golang:1.19.5'
       build:
-        image: 'golang:1.19.2'
+        image: 'golang:1.19.5'
         output_dir: 'binary'
       test:
         image: 'eu.gcr.io/gardener-project/gardener/testmachinery/base-step:stable'
