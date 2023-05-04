@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
-	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
@@ -48,18 +47,22 @@ import (
 //
 // RESPONSE PARAMETERS (driver.CreateMachineResponse)
 // ProviderID            string                   Unique identification of the VM at the cloud provider. This could be the same/different from req.MachineName.
-//                                                ProviderID typically matches with the node.Spec.ProviderID on the node object.
-//                                                Eg: gce://project-name/region/vm-ProviderID
+//
+//	ProviderID typically matches with the node.Spec.ProviderID on the node object.
+//	Eg: gce://project-name/region/vm-ProviderID
+//
 // NodeName              string                   Returns the name of the node-object that the VM register's with Kubernetes.
-//                                                This could be different from req.MachineName as well
+//
+//	This could be different from req.MachineName as well
+//
 // LastKnownState        string                   (Optional) Last known state of VM during the current operation.
-//                                                Could be helpful to continue operations in future requests.
+//
+//	Could be helpful to continue operations in future requests.
 //
 // OPTIONAL IMPLEMENTATION LOGIC
 // It is optionally expected by the safety controller to use an identification mechanisms to map the VM Created by a providerSpec.
 // These could be done using tag(s)/resource-groups etc.
 // This logic is used by safety controller to delete orphan VMs which are not backed by any machine CRD
-//
 func (plugin *MachinePlugin) CreateMachine(ctx context.Context, req *driver.CreateMachineRequest) (*driver.CreateMachineResponse, error) {
 	// Log messages to track request
 	klog.V(2).Infof("Machine creation request has been recieved for %q", req.Machine.Name)
@@ -111,8 +114,8 @@ func (plugin *MachinePlugin) CreateMachine(ctx context.Context, req *driver.Crea
 //
 // RESPONSE PARAMETERS (driver.DeleteMachineResponse)
 // LastKnownState        bytes(blob)              (Optional) Last known state of VM during the current operation.
-//                                                Could be helpful to continue operations in future requests.
 //
+//	Could be helpful to continue operations in future requests.
 func (plugin *MachinePlugin) DeleteMachine(ctx context.Context, req *driver.DeleteMachineRequest) (*driver.DeleteMachineResponse, error) {
 	// Log messages to track delete request
 	klog.V(2).Infof("Machine deletion request has been recieved for %q", req.Machine.Name)
@@ -181,10 +184,13 @@ func (plugin *MachinePlugin) DeleteMachine(ctx context.Context, req *driver.Dele
 //
 // RESPONSE PARAMETERS (driver.GetMachineStatueResponse)
 // ProviderID            string                   Unique identification of the VM at the cloud provider. This could be the same/different from req.MachineName.
-//                                                ProviderID typically matches with the node.Spec.ProviderID on the node object.
-//                                                Eg: gce://project-name/region/vm-ProviderID
+//
+//	ProviderID typically matches with the node.Spec.ProviderID on the node object.
+//	Eg: gce://project-name/region/vm-ProviderID
+//
 // NodeName             string                    Returns the name of the node-object that the VM register's with Kubernetes.
-//                                                This could be different from req.MachineName as well
+//
+//	This could be different from req.MachineName as well
 //
 // The request should return a NOT_FOUND (5) status error code if the machine is not existing
 func (plugin *MachinePlugin) GetMachineStatus(ctx context.Context, req *driver.GetMachineStatusRequest) (*driver.GetMachineStatusResponse, error) {
@@ -252,8 +258,8 @@ func (plugin *MachinePlugin) GetMachineStatus(ctx context.Context, req *driver.G
 //
 // RESPONSE PARAMETERS (driver.ListMachinesResponse)
 // MachineList           map<string,string>  A map containing the keys as the MachineID and value as the MachineName
-//                                           for all machine's who where possibilly created by this ProviderSpec
 //
+//	for all machine's who where possibilly created by this ProviderSpec
 func (plugin *MachinePlugin) ListMachines(ctx context.Context, req *driver.ListMachinesRequest) (*driver.ListMachinesResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
@@ -303,7 +309,6 @@ func (plugin *MachinePlugin) ListMachines(ctx context.Context, req *driver.ListM
 //
 // RESPONSE PARAMETERS (driver.GetVolumeIDsResponse)
 // VolumeIDs             []string                             VolumeIDs is a repeated list of VolumeIDs.
-//
 func (plugin *MachinePlugin) GetVolumeIDs(ctx context.Context, req *driver.GetVolumeIDsRequest) (*driver.GetVolumeIDsResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("GetVolumeIDs request has been recieved for %q", req.PVSpecs)
@@ -327,36 +332,4 @@ func (plugin *MachinePlugin) GetVolumeIDs(ctx context.Context, req *driver.GetVo
 	return &driver.GetVolumeIDsResponse{
 		VolumeIDs: volumeIDs,
 	}, nil
-}
-
-// GenerateMachineClassForMigration helps in migration of one kind of machineClass CR to another kind.
-// For instance an machineClass custom resource of `AWSMachineClass` to `MachineClass`.
-// Implement this functionality only if something like this is desired in your setup.
-// If you don't require this functionality leave is as is. (return Unimplemented)
-//
-// The following are the tasks typically expected out of this method
-// 1. Validate if the incoming classSpec is valid one for migration (e.g. has the right kind).
-// 2. Migrate/Copy over all the fields/spec from req.ProviderSpecificMachineClass to req.MachineClass
-// For an example refer
-//		https://github.com/prashanth26/machine-controller-manager-provider-gcp/blob/migration/pkg/gcp/machine_controller.go#L222-L233
-//
-// REQUEST PARAMETERS (driver.GenerateMachineClassForMigration)
-// ProviderSpecificMachineClass    interface{}                             ProviderSpecificMachineClass is provider specfic machine class object (E.g. AWSMachineClass). Typecasting is required here.
-// MachineClass 				   *v1alpha1.MachineClass                  MachineClass is the machine class object that is to be filled up by this method.
-// ClassSpec                       *v1alpha1.ClassSpec                     Somemore classSpec details useful while migration.
-//
-// RESPONSE PARAMETERS (driver.GenerateMachineClassForMigration)
-// NONE
-//
-func (plugin *MachinePlugin) GenerateMachineClassForMigration(ctx context.Context, req *driver.GenerateMachineClassForMigrationRequest) (*driver.GenerateMachineClassForMigrationResponse, error) {
-	// Log messages to track start and end of request
-	klog.V(2).Infof("MigrateMachineClass request has been recieved for %q", req.ClassSpec)
-	defer klog.V(2).Infof("MigrateMachineClass request has been processed successfully for %q", req.ClassSpec)
-
-	alicloudMachineClass := req.ProviderSpecificMachineClass.(*v1alpha1.AlicloudMachineClass)
-	if req.ClassSpec.Kind != AlicloudMachineClassKind {
-		return nil, status.Error(codes.Internal, "Migration cannot be done for this machineClass kind")
-	}
-
-	return &driver.GenerateMachineClassForMigrationResponse{}, migrateMachineClass(alicloudMachineClass, req.MachineClass)
 }
