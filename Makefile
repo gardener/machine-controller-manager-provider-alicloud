@@ -18,9 +18,9 @@ IMAGE_REPOSITORY    := eu.gcr.io/gardener-project/gardener/machine-controller-ma
 IMAGE_TAG           := $(shell cat VERSION)
 PROVIDER_NAME       := alicloud
 PROJECT_NAME        := gardener
-CONTROL_NAMESPACE   := default
-CONTROL_KUBECONFIG  := dev/control-kubeconfig.yaml
-TARGET_KUBECONFIG   := dev/target-kubeconfig.yaml
+CONTROL_NAMESPACE   :=  shoot--i544024--ali-test
+CONTROL_KUBECONFIG  :=  dev/kubeconfigs/kubeconfig_control.yaml
+TARGET_KUBECONFIG   :=  dev/kubeconfigs/kubeconfig_target.yaml
 
 # Below ones are used in tests
 MACHINECLASS_V1 	:= dev/machineclassv1.yaml
@@ -32,7 +32,7 @@ MC_IMAGE			:=
 LEADER_ELECT 	    := "true"
 # If Integration Test Suite is to be run locally against clusters then export the below variable
 # with MCM deployment name in the cluster
-# MACHINE_CONTROLLER_MANAGER_DEPLOYMENT_NAME := machine-controller-manager
+MACHINE_CONTROLLER_MANAGER_DEPLOYMENT_NAME := machine-controller-manager
 
 #########################################
 # Rules for running helper scripts
