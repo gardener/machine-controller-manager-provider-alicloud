@@ -46,6 +46,7 @@ import (
 	. "github.com/onsi/ginkgo"
 )
 
+// the timeout is changed to accommodate for time taken by node-critical components to get ready. PR - https://github.com/gardener/machine-controller-manager/pull/778
 var commons = common.NewIntegrationTestFramework(&provider.ResourcesTrackerImpl{}, 600)
 
 var _ = BeforeSuite(commons.SetupBeforeSuite)
