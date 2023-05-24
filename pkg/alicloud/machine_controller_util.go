@@ -28,8 +28,8 @@ import (
 )
 
 const (
-	// AlicloudMachineClassKind for AlicloudMachineClass
-	AlicloudMachineClassKind = "AlicloudMachineClass"
+	// ProviderAlicloud string const to identify Alicloud provider
+	ProviderAlicloud = "Alicloud"
 )
 
 func decodeProviderSpec(machineClass *v1alpha1.MachineClass) (*api.ProviderSpec, error) {

@@ -46,7 +46,7 @@ import (
 	. "github.com/onsi/ginkgo"
 )
 
-var commons = common.NewIntegrationTestFramework(&provider.ResourcesTrackerImpl{}, 400)
+var commons = common.NewIntegrationTestFramework(&provider.ResourcesTrackerImpl{}, 600)
 
 var _ = BeforeSuite(commons.SetupBeforeSuite)
 

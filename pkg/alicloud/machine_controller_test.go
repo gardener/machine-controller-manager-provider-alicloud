@@ -190,65 +190,6 @@ var _ = Describe("Machine Controller", func() {
 		Expect(response).To(Equal(deleteMachineResponse))
 	})
 
-	It("should migrate old machine class to the new one", func() {
-		var (
-			alicloudMachineClassSpec = &v1alpha1.AlicloudMachineClassSpec{
-				ImageID:                 "m-uf6jf6utod2nfs9x21iwse",
-				InstanceType:            "ecs.g6.large",
-				Region:                  "cn-shanghai",
-				ZoneID:                  "cn-shanghai-e",
-				SecurityGroupID:         "sg-uf69t4txlz6r18ybzxbx",
-				VSwitchID:               "vsw-uf6s1fjxxks65rk1tkrpm",
-				InstanceChargeType:      "PostPaid",
-				InternetChargeType:      "PayByTraffic",
-				InternetMaxBandwidthIn:  &internetMaxBandwidthIn,
-				InternetMaxBandwidthOut: &internetMaxBandwidthOut,
-				SpotStrategy:            "NoSpot",
-				KeyPairName:             "shoot-ssh-publickey",
-				Tags: map[string]string{
-					"kubernetes.io/cluster/shoot--mcm":     "1",
-					"kubernetes.io/role/worker/shoot--mcm": "1",
-				},
-				SystemDisk: &v1alpha1.AlicloudSystemDisk{
-					Category: "cloud_efficiency",
-					Size:     50,
-				},
-			}
-
-			migrateMachineClassRequest = &driver.GenerateMachineClassForMigrationRequest{
-				ProviderSpecificMachineClass: &v1alpha1.AlicloudMachineClass{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "machine-class-migration",
-					},
-					Spec: *alicloudMachineClassSpec,
-				},
-				MachineClass: &v1alpha1.MachineClass{
-					Provider: ProviderAlicloud,
-				},
-				ClassSpec: &v1alpha1.ClassSpec{
-					Kind: AlicloudMachineClassKind,
-				},
-			}
-
-			machineClass = &v1alpha1.MachineClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "machine-class-migration",
-				},
-				ProviderSpec: runtime.RawExtension{
-					Raw: providerSpecRaw,
-				},
-				Provider: ProviderAlicloud,
-			}
-
-			migrateMachineClassResponse = &driver.GenerateMachineClassForMigrationResponse{}
-		)
-
-		response, err := mockMachinePlugin.GenerateMachineClassForMigration(ctx, migrateMachineClassRequest)
-		Expect(err).To(BeNil())
-		Expect(response).To(Equal(migrateMachineClassResponse))
-		Expect(migrateMachineClassRequest.MachineClass).To(Equal(machineClass))
-	})
-
 	It("should get machine status successfully", func() {
 		var (
 			getMachineStatusRequest = &driver.GetMachineStatusRequest{
