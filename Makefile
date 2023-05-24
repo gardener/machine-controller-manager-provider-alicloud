@@ -18,9 +18,9 @@ IMAGE_REPOSITORY    := eu.gcr.io/gardener-project/gardener/machine-controller-ma
 IMAGE_TAG           := $(shell cat VERSION)
 PROVIDER_NAME       := alicloud
 PROJECT_NAME        := gardener
-CONTROL_NAMESPACE   :=  shoot--i544024--ali-test
-CONTROL_KUBECONFIG  :=  dev/kubeconfigs/kubeconfig_control.yaml
-TARGET_KUBECONFIG   :=  dev/kubeconfigs/kubeconfig_target.yaml
+CONTROL_NAMESPACE   :=
+CONTROL_KUBECONFIG  :=
+TARGET_KUBECONFIG   :=
 
 # Below ones are used in tests
 MACHINECLASS_V1 	:= dev/machineclassv1.yaml
