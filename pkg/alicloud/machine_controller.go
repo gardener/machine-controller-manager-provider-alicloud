@@ -21,11 +21,11 @@ import (
 	"context"
 	"fmt"
 
+	maperror "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/errors"
 	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
-	maperror "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/errors"
 	"k8s.io/klog/v2"
 )
 
