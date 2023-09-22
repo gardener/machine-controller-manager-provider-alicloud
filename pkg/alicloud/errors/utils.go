@@ -21,8 +21,8 @@ import (
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 )
 
-// CreateMachineErrorToMCMErrorCode takes the error returned from the EC2API during the CreateMachine call and returns the corresponding MCM error code.
-func CreateMachineErrorToMCMErrorCode(err error) codes.Code {
+// GetMCMErrorCodeForCreateMachine takes the error returned from the EC2API during the CreateMachine call and returns the corresponding MCM error code.
+func GetMCMErrorCodeForCreateMachine(err error) codes.Code {
 	aliErr, ok := err.(*alierr.ServerError)
 	if ok {
 		switch aliErr.ErrorCode() {

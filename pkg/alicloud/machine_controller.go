@@ -92,7 +92,7 @@ func (plugin *MachinePlugin) CreateMachine(ctx context.Context, req *driver.Crea
 
 	response, err := client.RunInstances(request)
 	if err != nil {
-		return nil, status.Error(maperror.CreateMachineErrorToMCMErrorCode(err), err.Error())
+		return nil, status.Error(maperror.GetMCMErrorCodeForCreateMachine(err), err.Error())
 	}
 
 	instanceID := response.InstanceIdSets.InstanceIdSet[0]

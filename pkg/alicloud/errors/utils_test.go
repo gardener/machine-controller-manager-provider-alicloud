@@ -43,6 +43,6 @@ func TestCreateMachineErrorToMCMErrorCode(t *testing.T) {
 		jsonResponse, err := json.Marshal(responseContent{entry.inputAliErrorCode})
 		g.Expect(err).To(BeNil())
 		inputError := alierr.NewServerError(403, string(jsonResponse), "some error happened on the server side")
-		g.Expect(CreateMachineErrorToMCMErrorCode(inputError)).To(Equal(entry.expectedCode))
+		g.Expect(GetMCMErrorCodeForCreateMachine(inputError)).To(Equal(entry.expectedCode))
 	}
 }
