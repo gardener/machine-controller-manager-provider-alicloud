@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	maperror "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/errors"
 	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
@@ -91,7 +92,7 @@ func (plugin *MachinePlugin) CreateMachine(ctx context.Context, req *driver.Crea
 
 	response, err := client.RunInstances(request)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(maperror.GetMCMErrorCodeForCreateMachine(err), err.Error())
 	}
 
 	instanceID := response.InstanceIdSets.InstanceIdSet[0]

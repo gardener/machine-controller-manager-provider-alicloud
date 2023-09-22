@@ -4,6 +4,7 @@
 /tmp/*
 /dev
 /logs
+.ci/controllers-test/logs
 
 .vscode
 .idea
