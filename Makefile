@@ -24,7 +24,7 @@ LEADER_ELECT 	    := "true"
 # with MCM deployment name in the cluster
 MACHINE_CONTROLLER_MANAGER_DEPLOYMENT_NAME := machine-controller-manager
 
-include .env
+-include .env
 
 #########################################
 # Rules for running helper scripts
