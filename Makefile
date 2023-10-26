@@ -12,19 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+-include .env
+
 BINARY_PATH         := bin/
 COVERPROFILE        := test/output/coverprofile.out
 IMAGE_REPOSITORY    := eu.gcr.io/gardener-project/gardener/machine-controller-manager-provider-alicloud
 IMAGE_TAG           := $(shell cat VERSION)
 PROVIDER_NAME       := alicloud
 PROJECT_NAME        := gardener
-
 LEADER_ELECT 	    := "true"
 # If Integration Test Suite is to be run locally against clusters then export the below variable
 # with MCM deployment name in the cluster
 MACHINE_CONTROLLER_MANAGER_DEPLOYMENT_NAME := machine-controller-manager
-
--include .env
 
 #########################################
 # Rules for running helper scripts
