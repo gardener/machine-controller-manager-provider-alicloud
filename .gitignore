@@ -5,7 +5,7 @@
 /dev
 /logs
 .ci/controllers-test/logs
-
+.env
 .vscode
 .idea
 *.DS_Store
