@@ -12,7 +12,7 @@ TEST_RESULT=
 cli_path=/cc/utils/cli.py
 num_of_existing_nodes=1
 TEST_SHOOT=ali-ci-it
-CREDENTIALS_SECRET_NAME=shoot-operator-aws-team
+CREDENTIALS_SECRET_NAME=shoot-operator-ali-team
 GARDEN_CORE_NAMESPACE=garden-core
 KUBECONFIG_EXPIRY=10800
 
