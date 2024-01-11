@@ -13,6 +13,7 @@
 # limitations under the License.
 
 -include .env
+export
 
 BINARY_PATH         := bin/
 COVERPROFILE        := test/output/coverprofile.out
@@ -25,6 +26,7 @@ IS_CONTROL_CLUSTER_SEED 	:= true
 # If Integration Test Suite is to be run locally against clusters then export the below variable
 # with MCM deployment name in the cluster
 MACHINE_CONTROLLER_MANAGER_DEPLOYMENT_NAME := machine-controller-manager
+CONTROL_CLUSTER_NAMESPACE := ${CONTROL_NAMESPACE}
 
 #########################################
 # Rules for running helper scripts

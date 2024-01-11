@@ -18,10 +18,11 @@ package spi
 
 import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	api "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/apis"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/pointer"
+
+	api "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/apis"
 )
 
 var _ = Describe("Plugin SPI", func() {

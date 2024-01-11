@@ -23,18 +23,19 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	api "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/apis"
-	mockclient "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/mock/client"
-	mockspi "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/mock/spi"
-	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	api "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/apis"
+	mockclient "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/mock/client"
+	mockspi "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/mock/spi"
+	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
 )
 
 var _ = Describe("Machine Controller", func() {

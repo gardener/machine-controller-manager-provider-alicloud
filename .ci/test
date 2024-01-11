@@ -19,9 +19,10 @@ set -e
 source "$(dirname ${0})/setupenv.src"
 
 # Install Ginkgo (test framework) to be able to execute the tests.
-go install -mod=vendor github.com/onsi/ginkgo/ginkgo
+go install github.com/onsi/ginkgo/v2/ginkgo
+echo "Successfully fetched Ginkgo framework"
+ginkgo version
 
-export GOFLAGS=-mod=vendor
 
 ##############################################################################
 
@@ -48,7 +49,7 @@ if [[ "${SKIP_UNIT_TESTS}" != "" ]]; then
 else
   echo ">>>>> Invoking unit tests"
   TEST_PACKAGES="pkg"
-  GINKGO_COMMON_FLAGS="-r -timeout=1h0m0s --randomizeAllSpecs --randomizeSuites --failOnPending  --progress"
+  GINKGO_COMMON_FLAGS="-r -timeout=1h0m0s --randomize-all --randomize-suites --fail-on-pending --show-node-events"
   test_without_coverage
   echo ">>>>> Finished executing unit tests"
 fi
