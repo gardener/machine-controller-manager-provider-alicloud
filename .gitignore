@@ -18,4 +18,4 @@ main
 
 # ignore binaries
 kubectl
-
+test/integration/controller/controller.test
