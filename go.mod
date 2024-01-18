@@ -2,8 +2,6 @@ module github.com/gardener/machine-controller-manager-provider-alicloud
 
 go 1.21
 
-toolchain go1.21.0
-
 require (
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20180828111155-cad214d7d71f
 	github.com/gardener/machine-controller-manager v0.51.1
