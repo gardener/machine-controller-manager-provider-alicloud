@@ -91,6 +91,7 @@ function setup_ginkgo() {
 
 # Fetch service account kubeconfig
 function fetch_service_account_kubeconfig() {
+    echo "fetch_service_account_kubeconfig: ${cli_path} config attribute --cfg-type kubernetes --cfg-name mcm-ci-garden-dev-virtual --key kubeconfig  > dev/sa_kubeconfig.yaml"
     ${cli_path} config attribute --cfg-type kubernetes --cfg-name mcm-ci-garden-dev-virtual --key kubeconfig  > dev/sa_kubeconfig.yaml
 }
 
@@ -153,6 +154,12 @@ type: Opaque
 EOF
 )
     echo "$secret_yaml" | kubectl --kubeconfig=$CONTROL_KUBECONFIG apply -f -
+    local exec_result=$?
+    echo "test_mc_secret create result: $exec_result"
+    if [[ exec_result -ne 0 ]]; then
+        printf "create_test_mc_secret failed with error: %s" $exec_result >&2
+        exit $exec_result
+    fi
 }
 
 function delete_test_mc_secret() {
