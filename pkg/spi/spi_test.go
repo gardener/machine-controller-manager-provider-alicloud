@@ -18,11 +18,17 @@ package spi
 
 import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	api "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/apis"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/pointer"
+
+	api "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/apis"
 )
+
+var pluginSPI PluginSPIImpl
+var _ = BeforeSuite(func() {
+	pluginSPI = PluginSPIImpl{}
+})
 
 var _ = Describe("Plugin SPI", func() {
 
@@ -74,13 +80,7 @@ var _ = Describe("Plugin SPI", func() {
 				Size:      20,
 			},
 		}
-
-		pluginSPI PluginSPIImpl
 	)
-
-	BeforeSuite(func() {
-		pluginSPI = PluginSPIImpl{}
-	})
 
 	It("should generate request of running instance", func() {
 		request, err := pluginSPI.NewRunInstancesRequest(providerSpec, machineName, userData)

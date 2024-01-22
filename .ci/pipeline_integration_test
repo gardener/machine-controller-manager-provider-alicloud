@@ -50,6 +50,7 @@ function hf_num_of_ready_nodes() {
 }
 
 function hf_wait_on() {
+    wait_interval=30
     function_name=$1
     function_param=$2
     count_to_match=$3
@@ -61,7 +62,8 @@ function hf_wait_on() {
         ret=$?
         [[ $ret -ne $count_to_match ]]
     do
-        sleep 30
+        printf "\n\t Error: %s invoked with %s did not return expected value %s. Will retry again in %s...\n" "$function_name" "$function_param" "$count_to_match" "$ wait_interval"
+        sleep $wait_interval
         ((iteration_count--))
 
         # Exit script when timeout occurs
@@ -89,6 +91,7 @@ function setup_ginkgo() {
 
 # Fetch service account kubeconfig
 function fetch_service_account_kubeconfig() {
+    echo "fetch_service_account_kubeconfig: ${cli_path} config attribute --cfg-type kubernetes --cfg-name mcm-ci-garden-dev-virtual --key kubeconfig  > dev/sa_kubeconfig.yaml"
     ${cli_path} config attribute --cfg-type kubernetes --cfg-name mcm-ci-garden-dev-virtual --key kubeconfig  > dev/sa_kubeconfig.yaml
 }
 
@@ -151,6 +154,12 @@ type: Opaque
 EOF
 )
     echo "$secret_yaml" | kubectl --kubeconfig=$CONTROL_KUBECONFIG apply -f -
+    local exec_result=$?
+    echo "test_mc_secret create result: $exec_result"
+    if [[ exec_result -ne 0 ]]; then
+        printf "create_test_mc_secret failed with error: %s" $exec_result >&2
+        exit $exec_result
+    fi
 }
 
 function delete_test_mc_secret() {
@@ -228,7 +237,8 @@ function run_integration_tests() {
     echo "Starting integration tests..."
     set +e
 
-    ginkgo -v -mod=vendor test/integration/controller
+    ginkgo -v --show-node-events --poll-progress-after=480s --poll-progress-interval=90s test/integration/controller
+
     TEST_RESULT=$?
 
     set -e
@@ -267,6 +277,8 @@ run_integration_tests
 cleanup_environment
 print_controller_logs
 printf "\n\t\t\t----- End of Test Script -----------\n"
+printf "\n\t\t\t----- Exiting with TEST_RESULT: %s -----------\n" "$TEST_RESULT"
+
 
 exit $TEST_RESULT
 

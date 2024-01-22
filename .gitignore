@@ -15,3 +15,7 @@ main
 
 # Output of the go coverage tool
 *coverprofile.out*
+
+# ignore binaries
+kubectl
+test/integration/controller/controller.test
