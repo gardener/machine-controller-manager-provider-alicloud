@@ -1,4 +1,7 @@
 # machine-controller-manager-provider-alicloud
+
+[![REUSE status](https://api.reuse.software/badge/github.com/gardener/machine-controller-manager-provider-alicloud)](https://api.reuse.software/info/github.com/gardener/machine-controller-manager-provider-alicloud)
+
 Out of tree (controller based) implementation for `alicloud` as a new provider.
 
 ## About
