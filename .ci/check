@@ -8,12 +8,10 @@ set -e
 
 source "$(dirname ${0})/setupenv.src"
 
-go install -mod=vendor golang.org/x/lint/golint
-
-export GOFLAGS=-mod=vendor
+go install golang.org/x/lint/golint
 
 ###############################################################################
-PACKAGES="$(go list -e ./... | grep -vE '/vendor/|/internal/flags')"
+PACKAGES="$(go list -e ./... | grep -vE '/internal/flags')"
 PACKAGES_DIRS="$(echo ${PACKAGES} | sed "s|github.com/gardener/machine-controller-manager-provider-alicloud|.|g")"
 
 # Execute static code checks.
