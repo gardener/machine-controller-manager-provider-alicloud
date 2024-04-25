@@ -94,6 +94,7 @@ func (plugin *MachinePlugin) CreateMachine(ctx context.Context, req *driver.Crea
 	}, nil
 }
 
+// InitializeMachine handles VM initialization for Alibaba Cloud VM's. Currently, un-implemented.
 func (plugin *MachinePlugin) InitializeMachine(_ context.Context, _ *driver.InitializeMachineRequest) (*driver.InitializeMachineResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "Alibaba Cloud Provider does not yet implement InitializeMachine")
 }
