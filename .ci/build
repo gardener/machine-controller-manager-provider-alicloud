@@ -16,7 +16,6 @@ VERSION=$(cat VERSION)
 # to build for linux OS, amd64 architectures and without CGO enablement.
 if [[ -z "$LOCAL_BUILD" ]]; then
   CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -mod=vendor \
     -a \
     -o ${BINARY_PATH}/rel/machine-controller \
     -ldflags "-X main.version=$VERSION-$(git rev-parse HEAD)" \
@@ -25,7 +24,6 @@ if [[ -z "$LOCAL_BUILD" ]]; then
 # If the LOCAL_BUILD environment variable is set, we simply run `go build`.
 else
   go build \
-    -mod=vendor \
     -o ${BINARY_PATH}/machine-controller \
     -ldflags "-X main.version=$VERSION-$(git rev-parse HEAD)" \
     cmd/machine-controller/main.go

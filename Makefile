@@ -16,7 +16,6 @@ IS_CONTROL_CLUSTER_SEED 	:= true
 # If Integration Test Suite is to be run locally against clusters then export the below variable
 # with MCM deployment name in the cluster
 MACHINE_CONTROLLER_MANAGER_DEPLOYMENT_NAME := machine-controller-manager
-CONTROL_CLUSTER_NAMESPACE := ${CONTROL_NAMESPACE}
 
 #########################################
 # Rules for running helper scripts
@@ -36,7 +35,6 @@ rename-project:
 .PHONY: start
 start:
 	@GO111MODULE=on go run \
-			-mod=vendor \
 			cmd/machine-controller/main.go \
 			--control-kubeconfig=$(CONTROL_KUBECONFIG) \
 			--target-kubeconfig=$(TARGET_KUBECONFIG) \
@@ -51,13 +49,12 @@ start:
 			--v=3
 
 #########################################
-# Rules for re-vendoring
+# Rules for tidying
 #########################################
 
-.PHONY: revendor
-revendor:
+.PHONY: tidy
+tidy:
 	@env GO111MODULE=on go mod tidy -v
-	@env GO111MODULE=on go mod vendor -v
 
 .PHONY: update-dependencies
 update-dependencies:
@@ -73,16 +70,6 @@ test-unit:
 
 .PHONY: test-integration
 test-integration:
-	@if [[ -f $(PWD)/$(CONTROL_KUBECONFIG) ]]; then export CONTROL_KUBECONFIG=$(PWD)/$(CONTROL_KUBECONFIG); elif [[ -f $(CONTROL_KUBECONFIG) ]]; then export CONTROL_KUBECONFIG=$(CONTROL_KUBECONFIG);else echo "No such file exists for CONTROL_KUBECONFIG";exit 1; fi; \
-	if [[ -f $(PWD)/$(TARGET_KUBECONFIG) ]]; then export TARGET_KUBECONFIG=$(PWD)/$(TARGET_KUBECONFIG); elif [[ -f $(TARGET_KUBECONFIG) ]]; then export TARGET_KUBECONFIG=$(TARGET_KUBECONFIG);else echo "No such file exists for TARGET_KUBECONFIG";exit 1; fi; \
-	if [[ -f "$(PWD)/$(MACHINECLASS_V1)" ]]; then export MACHINECLASS_V1="$(PWD)/$(MACHINECLASS_V1)"; elif [[ -f "$(MACHINECLASS_V1)" ]]; then export MACHINECLASS_V1="$(MACHINECLASS_V1)"; fi; \
-	if [[ -f "$(PWD)/$(MACHINECLASS_V2)" ]]; then export MACHINECLASS_V2="$(PWD)/$(MACHINECLASS_V2)"; elif [[ -f "$(MACHINECLASS_V2)" ]]; then export MACHINECLASS_V2="$(MACHINECLASS_V2)"; fi; \
-	export MC_CONTAINER_IMAGE=$(MC_IMAGE); \
-	export MCM_CONTAINER_IMAGE=$(MCM_IMAGE); \
-	export CONTROL_CLUSTER_NAMESPACE=$(CONTROL_NAMESPACE); \
-	export MACHINE_CONTROLLER_MANAGER_DEPLOYMENT_NAME=$(MACHINE_CONTROLLER_MANAGER_DEPLOYMENT_NAME); \
-	export TAGS_ARE_STRINGS=$(TAGS_ARE_STRINGS); \
-	export IS_CONTROL_CLUSTER_SEED=$(IS_CONTROL_CLUSTER_SEED); \
 	.ci/local_integration_test
 #########################################
 # Rules for build/release
