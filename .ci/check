@@ -6,11 +6,34 @@
 
 set -e
 
-source "$(dirname ${0})/setupenv.src"
+if [[ $(uname) == 'Darwin' ]]; then
+  READLINK_BIN="greadlink"
+else
+  READLINK_BIN="readlink"
+fi
 
-go install golang.org/x/lint/golint
+if [[ -z "${SOURCE_PATH}" ]]; then
+  export SOURCE_PATH="$(${READLINK_BIN} -f $(dirname ${0})/..)"
+else
+  export SOURCE_PATH="$(${READLINK_BIN} -f "${SOURCE_PATH}")"
+fi
+
+export GOBIN="${SOURCE_PATH}/tmp/bin"
+export PATH="${GOBIN}:${PATH}"
 
 ###############################################################################
+# Install golangci-lint (linting tool).
+if [[ -z "${GOLANGCI_LINT_VERSION}" ]]; then
+  export GOLANGCI_LINT_VERSION=v1.57.1
+fi
+echo "Fetching golangci-lint tool"
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@"${GOLANGCI_LINT_VERSION}"
+echo "Successfully fetched golangci-lint"
+golangci-lint version
+
+###############################################################################
+cd ${SOURCE_PATH}
+
 PACKAGES="$(go list -e ./... | grep -vE '/internal/flags')"
 PACKAGES_DIRS="$(echo ${PACKAGES} | sed "s|github.com/gardener/machine-controller-manager-provider-alicloud|.|g")"
 
@@ -23,8 +46,7 @@ echo "Running gofmt..."
 gofmt -l -w -s ${PACKAGES_DIRS}
 
 # Execute lint checks.
-echo "Running golint..."
-for package in ${PACKAGES_DIRS}; do
-    golint -set_exit_status $(find $package -maxdepth 1 -name "*.go" | grep -vE 'zz_generated|_test.go')
-done
+echo "Executing golangci-lint..."
+# golangci-lint can't be run from outside the directory
+(cd ${SOURCE_PATH} && golangci-lint run -c .golangci.yaml --timeout 10m)
 echo "Check script has passed successfully"

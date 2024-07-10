@@ -33,12 +33,12 @@ type ProviderSpec struct {
 
 // AlicloudDataDisk describes DataDisk for Alicloud.
 type AlicloudDataDisk struct {
-	Name               string `json:"name,omitEmpty"`
-	Category           string `json:"category,omitEmpty"`
-	Description        string `json:"description,omitEmpty"`
-	Encrypted          bool   `json:"encrypted,omitEmpty"`
-	DeleteWithInstance *bool  `json:"deleteWithInstance,omitEmpty"`
-	Size               int    `json:"size,omitEmpty"`
+	Name               string `json:"name,omitempty"`
+	Category           string `json:"category,omitempty"`
+	Description        string `json:"description,omitempty"`
+	Encrypted          bool   `json:"encrypted,omitempty"`
+	DeleteWithInstance *bool  `json:"deleteWithInstance,omitempty"`
+	Size               int    `json:"size,omitempty"`
 }
 
 // AlicloudSystemDisk describes SystemDisk for Alicloud.

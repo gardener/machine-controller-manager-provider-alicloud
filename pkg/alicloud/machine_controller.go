@@ -52,7 +52,7 @@ import (
 // It is optionally expected by the safety controller to use an identification mechanisms to map the VM Created by a providerSpec.
 // These could be done using tag(s)/resource-groups etc.
 // This logic is used by safety controller to delete orphan VMs which are not backed by any machine CRD
-func (plugin *MachinePlugin) CreateMachine(ctx context.Context, req *driver.CreateMachineRequest) (*driver.CreateMachineResponse, error) {
+func (plugin *MachinePlugin) CreateMachine(_ context.Context, req *driver.CreateMachineRequest) (*driver.CreateMachineResponse, error) {
 	// Log messages to track request
 	klog.V(2).Infof("Machine creation request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine creation request has been processed for %q", req.Machine.Name)
@@ -110,7 +110,7 @@ func (plugin *MachinePlugin) InitializeMachine(_ context.Context, _ *driver.Init
 // LastKnownState        bytes(blob)              (Optional) Last known state of VM during the current operation.
 //
 //	Could be helpful to continue operations in future requests.
-func (plugin *MachinePlugin) DeleteMachine(ctx context.Context, req *driver.DeleteMachineRequest) (*driver.DeleteMachineResponse, error) {
+func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.DeleteMachineRequest) (*driver.DeleteMachineResponse, error) {
 	// Log messages to track delete request
 	klog.V(2).Infof("Machine deletion request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine deletion request has been processed for %q", req.Machine.Name)
@@ -187,7 +187,7 @@ func (plugin *MachinePlugin) DeleteMachine(ctx context.Context, req *driver.Dele
 //	This could be different from req.MachineName as well
 //
 // The request should return a NOT_FOUND (5) status error code if the machine is not existing
-func (plugin *MachinePlugin) GetMachineStatus(ctx context.Context, req *driver.GetMachineStatusRequest) (*driver.GetMachineStatusResponse, error) {
+func (plugin *MachinePlugin) GetMachineStatus(_ context.Context, req *driver.GetMachineStatusRequest) (*driver.GetMachineStatusResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("Get request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
@@ -254,7 +254,7 @@ func (plugin *MachinePlugin) GetMachineStatus(ctx context.Context, req *driver.G
 // MachineList           map<string,string>  A map containing the keys as the MachineID and value as the MachineName
 //
 //	for all machine's who where possibilly created by this ProviderSpec
-func (plugin *MachinePlugin) ListMachines(ctx context.Context, req *driver.ListMachinesRequest) (*driver.ListMachinesResponse, error) {
+func (plugin *MachinePlugin) ListMachines(_ context.Context, req *driver.ListMachinesRequest) (*driver.ListMachinesResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
 	defer klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
@@ -303,7 +303,7 @@ func (plugin *MachinePlugin) ListMachines(ctx context.Context, req *driver.ListM
 //
 // RESPONSE PARAMETERS (driver.GetVolumeIDsResponse)
 // VolumeIDs             []string                             VolumeIDs is a repeated list of VolumeIDs.
-func (plugin *MachinePlugin) GetVolumeIDs(ctx context.Context, req *driver.GetVolumeIDsRequest) (*driver.GetVolumeIDsResponse, error) {
+func (plugin *MachinePlugin) GetVolumeIDs(_ context.Context, req *driver.GetVolumeIDsRequest) (*driver.GetVolumeIDsResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("GetVolumeIDs request has been recieved for %q", req.PVSpecs)
 	defer klog.V(2).Infof("GetVolumeIDs request has been processed successfully for %q", req.PVSpecs)
