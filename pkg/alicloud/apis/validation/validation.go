@@ -11,7 +11,7 @@ import (
 )
 
 // ValidateProviderSpecNSecret validates provider spec and secret to check if all fields are present and valid
-func ValidateProviderSpecNSecret(spec *api.ProviderSpec, secrets *corev1.Secret) []error {
+func ValidateProviderSpecNSecret(_ *api.ProviderSpec, _ *corev1.Secret) []error {
 	// Code for validation of providerSpec goes here
 	return nil
 }
