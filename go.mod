@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20180828111155-cad214d7d71f
-	github.com/gardener/machine-controller-manager v0.53.0
+	github.com/gardener/machine-controller-manager v0.53.1
 	github.com/golang/mock v1.4.4
 	github.com/onsi/ginkgo/v2 v2.13.0
 	github.com/onsi/gomega v1.29.0
