@@ -19,3 +19,6 @@ main
 # ignore binaries
 kubectl
 test/integration/controller/controller.test
+
+# gosec
+gosec-report.sarif
