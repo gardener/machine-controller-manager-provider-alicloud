@@ -49,4 +49,7 @@ gofmt -l -w -s ${PACKAGES_DIRS}
 echo "Executing golangci-lint..."
 # golangci-lint can't be run from outside the directory
 (cd ${SOURCE_PATH} && golangci-lint run -c .golangci.yaml --timeout 10m)
+
+# Run Static Application Security Testing (SAST) using gosec
+make sast-report
 echo "Check script has passed successfully"
