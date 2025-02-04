@@ -6,7 +6,7 @@ toolchain go1.23.3
 
 require (
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20180828111155-cad214d7d71f
-	github.com/gardener/machine-controller-manager v0.53.0
+	github.com/gardener/machine-controller-manager v0.56.0
 	github.com/golang/mock v1.4.4
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
@@ -78,6 +78,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
-
-//TODO: revert this
-replace github.com/gardener/machine-controller-manager => github.com/aaronfern/machine-controller-manager v0.0.0-20250121164622-8f3a2d57141a
