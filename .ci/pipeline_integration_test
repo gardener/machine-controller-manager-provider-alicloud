@@ -70,7 +70,7 @@ function fetch_control_cluster_kubeconfig() {
 
 function fetch_gna_secret_name(){
     kubectl --kubeconfig=dev/control_kubeconfig.yaml get mcc -n $CONTROL_CLUSTER_NAMESPACE -oyaml > "${SOURCE_PATH}"/dev/v1machineclass_converted.yaml
-    GNA_SECRET_NAME=$(yq eval '.items.[0].providerSpec.tags."worker.gardener.cloud_gardener-node-agent-secret-name"' dev/v1machineclass_converted.yaml)
+    GNA_SECRET_NAME=$(yq eval '.items.[0].providerSpec.tags."worker.gardener.cloud/gardener-node-agent-secret-name"' dev/v1machineclass_converted.yaml)
     export GNA_SECRET_NAME=$GNA_SECRET_NAME
 }
 
