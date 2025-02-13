@@ -100,7 +100,7 @@ func (pluginSPI *PluginSPIImpl) NewRunInstancesRequest(providerSpec *api.Provide
 		request.InternetMaxBandwidthOut = requests.NewInteger(int(*providerSpec.InternetMaxBandwidthOut))
 	}
 
-	if providerSpec.DataDisks != nil && len(providerSpec.DataDisks) > 0 {
+	if len(providerSpec.DataDisks) > 0 {
 		dataDisks := pluginSPI.NewInstanceDataDisks(providerSpec.DataDisks, machineName)
 		request.DataDisk = &dataDisks
 	}

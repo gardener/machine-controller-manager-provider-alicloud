@@ -145,7 +145,7 @@ func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.Delete
 	if len(instances) == 0 {
 		// No running instance exists with the given machineID
 		errMessage := fmt.Sprintf("ECS instance not found backing this machine object with Provider ID: %v", req.Machine.Spec.ProviderID)
-		klog.V(2).Infof(errMessage)
+		klog.V(2).Info(errMessage)
 
 		return nil, status.Error(codes.NotFound, errMessage)
 	}
