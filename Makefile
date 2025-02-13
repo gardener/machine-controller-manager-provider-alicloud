@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 #
 # SPDX-License-Identifier: Apache-2.0
-
+include hack/tools.mk
 -include .env
 export
 
@@ -114,3 +114,11 @@ clean:
 .PHONY: format
 format:
 	@goimports -w -l  ./cmd ./pkg
+
+.PHONY: sast
+sast: $(GOSEC)
+	@./hack/sast.sh
+
+.PHONY: sast-report
+sast-report: $(GOSEC)
+	@./hack/sast.sh --gosec-report true
