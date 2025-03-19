@@ -154,29 +154,56 @@ var _ = Describe("Machine Controller", func() {
 		Expect(response).To(Equal(createMachineResponse))
 	})
 
-	It("should delete machine successfully", func() {
-		var (
-			deleteMachineRequest = &driver.DeleteMachineRequest{
-				Machine:      machine,
-				MachineClass: machineClass,
-				Secret:       providerSecret,
-			}
-			deleteMachineResponse = &driver.DeleteMachineResponse{
-				LastKnownState: "ECS instance i-mockinstanceid deleted for machine mock-machine-name",
-			}
-		)
+	Describe("should delete machine successfully", func() {
+		It("when machine.spec.providerID is set", func() {
+			var (
+				deleteMachineRequest = &driver.DeleteMachineRequest{
+					Machine:      machine,
+					MachineClass: machineClass,
+					Secret:       providerSecret,
+				}
+				deleteMachineResponse = &driver.DeleteMachineResponse{
+					LastKnownState: "ECS instance i-mockinstanceid deleted for machine mock-machine-name",
+				}
+			)
 
-		gomock.InOrder(
-			mockPluginSPI.EXPECT().NewECSClient(deleteMachineRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
-			mockPluginSPI.EXPECT().NewDescribeInstancesRequest("", instanceID, providerSpec.Tags).Return(describeInstanceRequest, nil),
-			mockECSClient.EXPECT().DescribeInstances(describeInstanceRequest).Return(describeInstanceResponse, nil),
-			mockPluginSPI.EXPECT().NewDeleteInstanceRequest(instanceID, true).Return(deleteInstanceRequest, nil),
-			mockECSClient.EXPECT().DeleteInstance(deleteInstanceRequest).Return(deleteInstanceResponse, nil),
-		)
+			gomock.InOrder(
+				mockPluginSPI.EXPECT().NewECSClient(deleteMachineRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
+				mockPluginSPI.EXPECT().NewDescribeInstancesRequest("", instanceID, providerSpec.Tags).Return(describeInstanceRequest, nil),
+				mockECSClient.EXPECT().DescribeInstances(describeInstanceRequest).Return(describeInstanceResponse, nil),
+				mockPluginSPI.EXPECT().NewDeleteInstanceRequest(instanceID, true).Return(deleteInstanceRequest, nil),
+				mockECSClient.EXPECT().DeleteInstance(deleteInstanceRequest).Return(deleteInstanceResponse, nil),
+			)
 
-		response, err := mockMachinePlugin.DeleteMachine(ctx, deleteMachineRequest)
-		Expect(err).To(BeNil())
-		Expect(response).To(Equal(deleteMachineResponse))
+			response, err := mockMachinePlugin.DeleteMachine(ctx, deleteMachineRequest)
+			Expect(err).To(BeNil())
+			Expect(response).To(Equal(deleteMachineResponse))
+		})
+		It("when machine.spec.providerID is not set", func() {
+			var (
+				deleteMachineRequest = &driver.DeleteMachineRequest{
+					Machine:      machine,
+					MachineClass: machineClass,
+					Secret:       providerSecret,
+				}
+				deleteMachineResponse = &driver.DeleteMachineResponse{
+					LastKnownState: "ECS instance(s) [i-mockinstanceid] deleted for machine mock-machine-name",
+				}
+			)
+
+			gomock.InOrder(
+				mockPluginSPI.EXPECT().NewECSClient(deleteMachineRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
+				mockPluginSPI.EXPECT().NewDescribeInstancesRequest(deleteMachineRequest.Machine.Name, "", providerSpec.Tags).Return(describeInstanceRequest, nil),
+				mockECSClient.EXPECT().DescribeInstances(describeInstanceRequest).Return(describeInstanceResponse, nil),
+				mockPluginSPI.EXPECT().NewDeleteInstanceRequest(instanceID, true).Return(deleteInstanceRequest, nil),
+				mockECSClient.EXPECT().DeleteInstance(deleteInstanceRequest).Return(deleteInstanceResponse, nil),
+			)
+
+			deleteMachineRequest.Machine.Spec.ProviderID = ""
+			response, err := mockMachinePlugin.DeleteMachine(ctx, deleteMachineRequest)
+			Expect(err).To(BeNil())
+			Expect(response).To(Equal(deleteMachineResponse))
+		})
 	})
 
 	It("should get machine status successfully", func() {

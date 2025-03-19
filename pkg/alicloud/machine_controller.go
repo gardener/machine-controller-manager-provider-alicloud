@@ -131,40 +131,77 @@ func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.Delete
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	instanceID := decodeProviderID(req.Machine.Spec.ProviderID)
-	describeInstanceRequest, err := plugin.SPI.NewDescribeInstancesRequest("", instanceID, providerSpec.Tags)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	response, err := client.DescribeInstances(describeInstanceRequest)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
+	lastKnownState := ""
 
-	instances := response.Instances.Instance
-	if len(instances) == 0 {
-		// No running instance exists with the given machineID
-		errMessage := fmt.Sprintf("ECS instance not found backing this machine object with Provider ID: %v", req.Machine.Spec.ProviderID)
-		klog.V(2).Info(errMessage)
+	if req.Machine.Spec.ProviderID != "" {
+		instanceID := decodeProviderID(req.Machine.Spec.ProviderID)
+		describeInstanceRequest, err := plugin.SPI.NewDescribeInstancesRequest("", instanceID, providerSpec.Tags)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		response, err := client.DescribeInstances(describeInstanceRequest)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 
-		return nil, status.Error(codes.NotFound, errMessage)
-	}
+		instances := response.Instances.Instance
+		if len(instances) == 0 {
+			// No running instance exists with the given machineID
+			errMessage := fmt.Sprintf("ECS instance not found backing this machine object with Provider ID: %v", req.Machine.Spec.ProviderID)
+			klog.V(2).Info(errMessage)
 
-	if instances[0].Status != "Running" && instances[0].Status != "Stopped" {
-		return nil, status.Error(codes.Unavailable, "ECS instance not in running/stopped state")
-	}
+			return nil, status.Error(codes.NotFound, errMessage)
+		}
 
-	deleteInstanceRequest, err := plugin.SPI.NewDeleteInstanceRequest(instanceID, true)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	_, err = client.DeleteInstance(deleteInstanceRequest)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		if instances[0].Status != "Running" && instances[0].Status != "Stopped" {
+			return nil, status.Error(codes.Unavailable, "ECS instance not in running/stopped state")
+		}
+
+		deleteInstanceRequest, err := plugin.SPI.NewDeleteInstanceRequest(instanceID, true)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		_, err = client.DeleteInstance(deleteInstanceRequest)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		lastKnownState = fmt.Sprintf("ECS instance %s deleted for machine %s", instanceID, req.Machine.Name)
+	} else {
+		klog.V(2).Infof("No provider ID set for machine %s. Checking if backing ECS instance is present.", req.Machine.Name)
+		describeInstanceRequest, err := plugin.SPI.NewDescribeInstancesRequest(req.Machine.Name, "", providerSpec.Tags)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		response, err := client.DescribeInstances(describeInstanceRequest)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		instances := response.Instances.Instance
+		if len(instances) == 0 {
+			// No running instance exists with the given machineName
+			klog.V(2).Infof("No backing ECS instance found. Termination successful for machine object %q", req.Machine.Name)
+			return &driver.DeleteMachineResponse{}, nil
+		}
+
+		var deletedInstances = make([]string, 0, len(instances))
+		for _, instance := range instances {
+			deleteInstanceRequest, err := plugin.SPI.NewDeleteInstanceRequest(instance.InstanceId, true)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			_, err = client.DeleteInstance(deleteInstanceRequest)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			klog.V(3).Infof("ECS instance %s deleted for machine %s", instance.InstanceId, instance.InstanceName)
+			deletedInstances = append(deletedInstances, instance.InstanceId)
+		}
+		lastKnownState = fmt.Sprintf("ECS instance(s) %v deleted for machine %s", deletedInstances, req.Machine.Name)
 	}
 
 	return &driver.DeleteMachineResponse{
-		LastKnownState: fmt.Sprintf("ECS instance %s deleted for machine %s", instanceID, req.Machine.Name),
+		LastKnownState: lastKnownState,
 	}, nil
 }
 
