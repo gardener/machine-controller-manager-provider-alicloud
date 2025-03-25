@@ -203,6 +203,7 @@ var _ = Describe("Machine Controller", func() {
 			response, err := mockMachinePlugin.DeleteMachine(ctx, deleteMachineRequest)
 			Expect(err).To(BeNil())
 			Expect(response).To(Equal(deleteMachineResponse))
+			deleteMachineRequest.Machine.Spec.ProviderID = providerID //Need to add this value back as other tests are dependent on this
 		})
 	})
 
