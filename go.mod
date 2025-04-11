@@ -6,7 +6,7 @@ toolchain go1.23.3
 
 require (
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20180828111155-cad214d7d71f
-	github.com/gardener/machine-controller-manager v0.56.0
+	github.com/gardener/machine-controller-manager v0.57.2
 	github.com/golang/mock v1.4.4
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
