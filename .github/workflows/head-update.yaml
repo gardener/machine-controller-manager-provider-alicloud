@@ -9,6 +9,10 @@ jobs:
     with:
       mode: snapshot
     secrets: inherit
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
 
   component-descriptor:
     uses: gardener/cc-utils/.github/workflows/post-build.yaml@master
