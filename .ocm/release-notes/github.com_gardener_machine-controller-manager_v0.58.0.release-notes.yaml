@@ -1,0 +1,27 @@
+ocm:
+  component_name: github.com/gardener/machine-controller-manager
+  component_version: v0.58.0
+release_notes:
+- audience: null
+  author: null
+  category: null
+  contents: |
+    # [gardener/machine-controller-manager]
+
+    ## ✨ New Features
+
+    - `[OPERATOR]` Machine Controller Manager now supports a new machine deployment strategy called `InPlaceUpdate`. by @acumino [#973]
+    ## 🐛 Bug Fixes
+
+    - `[OPERATOR]` A new termination queue to handle machines scheduled for deletion introduced to separate creation requests from deletion by @takoverflow [#964]
+    - `[OPERATOR]` machine-controller-manager version, and build information are printed at startup. by @renormalize [#985]
+    ## 🏃 Others
+
+    - `[OPERATOR]` Resource exhaustion on machine creation results in a longer retry period by @takoverflow [#981]
+    - `[OPERATOR]` Integration test framework enhancements for resource and process cleanup by @takoverflow [#968]
+
+    ## Docker Images
+    - machine-controller-manager: `europe-docker.pkg.dev/gardener-project/releases/gardener/machine-controller-manager:v0.58.0`
+  mimetype: text/markdown
+  reference: null
+  type: prerendered

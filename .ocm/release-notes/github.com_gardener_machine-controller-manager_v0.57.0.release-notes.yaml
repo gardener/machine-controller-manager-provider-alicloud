@@ -1,0 +1,20 @@
+ocm:
+  component_name: github.com/gardener/machine-controller-manager
+  component_version: v0.57.0
+release_notes:
+- audience: null
+  author: null
+  category: null
+  contents: |
+    # [gardener/machine-controller-manager]
+
+    ## 🏃 Others
+
+    - `[OPERATOR]` Introduced `MachineConfiguration` options for InPlaceUpdates by @acumino [#970]
+    - `[OPERATOR]` Introduced API changes to support InPlaceUpdate by @acumino [#962]
+
+    ## Docker Images
+    - machine-controller-manager: `europe-docker.pkg.dev/gardener-project/releases/gardener/machine-controller-manager:v0.57.0`
+  mimetype: text/markdown
+  reference: null
+  type: prerendered
