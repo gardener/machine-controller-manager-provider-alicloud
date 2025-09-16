@@ -15,6 +15,10 @@ jobs:
     with:
       mode: release
     secrets: inherit
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
 
   release-to-github-and-bump:
     uses: gardener/cc-utils/.github/workflows/release.yaml@master
