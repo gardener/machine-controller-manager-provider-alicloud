@@ -1,0 +1,29 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+aliases:
+  machine-controller-manager-provider-alicloud-reviewers:
+  - aaronfern
+  - ashwani2k
+  - elankath
+  - EmoinLanyu
+  - gagan16k
+  - jia-jerry
+  - kevin-lacoo
+  - kon-angelo
+  - shaoyongfeng
+  - takoverflow
+  - thiyyakat
+  - unmarshall
+  machine-controller-manager-provider-alicloud-approvers:
+  - aaronfern
+  - ashwani2k
+  - elankath
+  - EmoinLanyu
+  - gagan16k
+  - jia-jerry
+  - kevin-lacoo
+  - kon-angelo
+  - shaoyongfeng
+  - takoverflow
+  - thiyyakat
+  - unmarshall
