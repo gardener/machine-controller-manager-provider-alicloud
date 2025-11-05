@@ -11,7 +11,7 @@ type mockECSClient struct {
 	err       error
 }
 
-func (m *mockECSClient) RunInstances(request *ecs.RunInstancesRequest) (*ecs.RunInstancesResponse, error) {
+func (m *mockECSClient) RunInstances(_ *ecs.RunInstancesRequest) (*ecs.RunInstancesResponse, error) {
 	return nil, nil
 }
 
@@ -35,22 +35,22 @@ func (m *mockECSClient) DescribeInstances(request *ecs.DescribeInstancesRequest)
 	return &ecs.DescribeInstancesResponse{}, nil
 }
 
-func (m *mockECSClient) DeleteInstance(request *ecs.DeleteInstanceRequest) (*ecs.DeleteInstanceResponse, error) {
+func (m *mockECSClient) DeleteInstance(_ *ecs.DeleteInstanceRequest) (*ecs.DeleteInstanceResponse, error) {
 	return nil, nil
 }
 
-func (m *mockECSClient) DescribeDisks(request *ecs.DescribeDisksRequest) (*ecs.DescribeDisksResponse, error) {
+func (m *mockECSClient) DescribeDisks(_ *ecs.DescribeDisksRequest) (*ecs.DescribeDisksResponse, error) {
 	return nil, nil
 }
 
-func (m *mockECSClient) DeleteDisk(request *ecs.DeleteDiskRequest) (*ecs.DeleteDiskResponse, error) {
+func (m *mockECSClient) DeleteDisk(_ *ecs.DeleteDiskRequest) (*ecs.DeleteDiskResponse, error) {
 	return nil, nil
 }
 
-func (m *mockECSClient) DescribeNetworkInterfaces(request *ecs.DescribeNetworkInterfacesRequest) (*ecs.DescribeNetworkInterfacesResponse, error) {
+func (m *mockECSClient) DescribeNetworkInterfaces(_ *ecs.DescribeNetworkInterfacesRequest) (*ecs.DescribeNetworkInterfacesResponse, error) {
 	return nil, nil
 }
 
-func (m *mockECSClient) DeleteNetworkInterface(request *ecs.DeleteNetworkInterfaceRequest) (*ecs.DeleteNetworkInterfaceResponse, error) {
+func (m *mockECSClient) DeleteNetworkInterface(_ *ecs.DeleteNetworkInterfaceRequest) (*ecs.DeleteNetworkInterfaceResponse, error) {
 	return nil, nil
 }
