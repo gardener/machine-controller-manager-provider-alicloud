@@ -37,7 +37,22 @@ func (m *MockPluginSPI) EXPECT() *MockPluginSPIMockRecorder {
 	return m.recorder
 }
 
-// NewDeleteInstanceRequest mocks base method
+// DescribeAllInstances mocks base method
+func (m *MockPluginSPI) DescribeAllInstances(arg0 spi.ECSClient, arg1, arg2 string, arg3 map[string]string) ([]ecs.Instance, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DescribeAllInstances", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].([]ecs.Instance)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DescribeAllInstances indicates an expected call of DescribeAllInstances
+func (mr *MockPluginSPIMockRecorder) DescribeAllInstances(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeAllInstances", reflect.TypeOf((*MockPluginSPI)(nil).DescribeAllInstances), arg0, arg1, arg2, arg3)
+}
+
+// NewDeleteInstanceRequest mocks base method.
 func (m *MockPluginSPI) NewDeleteInstanceRequest(arg0 string, arg1 bool) (*ecs.DeleteInstanceRequest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NewDeleteInstanceRequest", arg0, arg1)

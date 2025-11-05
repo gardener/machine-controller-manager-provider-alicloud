@@ -168,21 +168,18 @@ func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.Delete
 		lastKnownState = fmt.Sprintf("ECS instance %s deleted for machine %s", instanceID, req.Machine.Name)
 	} else {
 		klog.V(2).Infof("No provider ID set for machine %s. Checking if backing ECS instance is present.", req.Machine.Name)
-		describeInstanceRequest, err := plugin.SPI.NewDescribeInstancesRequest(req.Machine.Name, "", providerSpec.Tags)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-		response, err := client.DescribeInstances(describeInstanceRequest)
+
+		instances, err := plugin.SPI.DescribeAllInstances(client, req.Machine.Name, "", providerSpec.Tags)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		instances := response.Instances.Instance
 		if len(instances) == 0 {
 			// No running instance exists with the given machineName
 			klog.V(2).Infof("No backing ECS instance found. Termination successful for machine object %q", req.Machine.Name)
 			return &driver.DeleteMachineResponse{}, nil
 		}
+		klog.V(3).Infof("Found %d instances for machine class %q", len(instances), req.MachineClass.Name)
 
 		var deletedInstances = make([]string, 0, len(instances))
 		for _, instance := range instances {
@@ -246,16 +243,11 @@ func (plugin *MachinePlugin) GetMachineStatus(_ context.Context, req *driver.Get
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	request, err := plugin.SPI.NewDescribeInstancesRequest(req.Machine.Name, "", providerSpec.Tags)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	response, err := client.DescribeInstances(request)
+	instances, err := plugin.SPI.DescribeAllInstances(client, req.Machine.Name, "", providerSpec.Tags)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	instances := response.Instances.Instance
 	if len(instances) == 0 {
 		// No running instance exists with the given machineID
 		klog.V(2).Infof("No matching instances found with %q", req.Machine.Name)
@@ -271,7 +263,7 @@ func (plugin *MachinePlugin) GetMachineStatus(_ context.Context, req *driver.Get
 		return nil, status.Error(codes.OutOfRange, errMessage)
 	}
 
-	klog.V(3).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
+	klog.V(3).Infof("Machine get request has been processed successfully, found %d instances for %q", len(instances), req.Machine.Name)
 	return &driver.GetMachineStatusResponse{
 		NodeName:   instanceIDToName(instances[0].InstanceId),
 		ProviderID: encodeProviderID(providerSpec.Region, instances[0].InstanceId),
@@ -312,21 +304,18 @@ func (plugin *MachinePlugin) ListMachines(_ context.Context, req *driver.ListMac
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	request, err := plugin.SPI.NewDescribeInstancesRequest("", "", providerSpec.Tags)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	response, err := client.DescribeInstances(request)
+	instances, err := plugin.SPI.DescribeAllInstances(client, "", "", providerSpec.Tags)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	instances := response.Instances.Instance
 	listOfMachines := make(map[string]string)
 	for _, instance := range instances {
 		machineName := instance.InstanceName
 		listOfMachines[encodeProviderID(providerSpec.Region, instance.InstanceId)] = machineName
 	}
+
+	klog.V(3).Infof("Found %d instances for machine class %q", len(instances), req.MachineClass.Name)
 
 	return &driver.ListMachinesResponse{
 		MachineList: listOfMachines,

@@ -5,6 +5,8 @@
 package spi
 
 import (
+	"fmt"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -117,6 +119,97 @@ var _ = Describe("Plugin SPI", func() {
 				Value: "1",
 			},
 		))
+	})
+
+	It("should fetch all instances from a single page", func() {
+		mockClient := &mockECSClient{
+			responses: []*ecs.DescribeInstancesResponse{
+				{
+					TotalCount: 2,
+					Instances: ecs.Instances{
+						Instance: []ecs.Instance{
+							{
+								InstanceId:   "i-instance1",
+								InstanceName: "machine-1",
+								Status:       "Running",
+							},
+							{
+								InstanceId:   "i-instance2",
+								InstanceName: "machine-2",
+								Status:       "Running",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		instances, err := pluginSPI.DescribeAllInstances(mockClient, "", "", providerSpec.Tags)
+		Expect(err).To(BeNil())
+		Expect(instances).To(HaveLen(2))
+		Expect(instances[0].InstanceId).To(Equal("i-instance1"))
+		Expect(instances[1].InstanceId).To(Equal("i-instance2"))
+		Expect(mockClient.callCount).To(Equal(1))
+	})
+
+	It("should fetch all instances from multiple pages", func() {
+		mockClient := &mockECSClient{
+			responses: []*ecs.DescribeInstancesResponse{
+				{
+					TotalCount: 250,
+					Instances: ecs.Instances{
+						Instance: make([]ecs.Instance, 100),
+					},
+				},
+				{
+					TotalCount: 250,
+					Instances: ecs.Instances{
+						Instance: make([]ecs.Instance, 100),
+					},
+				},
+				{
+					TotalCount: 250,
+					Instances: ecs.Instances{
+						Instance: make([]ecs.Instance, 50),
+					},
+				},
+			},
+		}
+
+		instances, err := pluginSPI.DescribeAllInstances(mockClient, "", "", providerSpec.Tags)
+		Expect(err).To(BeNil())
+		Expect(instances).To(HaveLen(250))
+		Expect(mockClient.callCount).To(Equal(3))
+	})
+
+	It("should handle empty results", func() {
+		mockClient := &mockECSClient{
+			responses: []*ecs.DescribeInstancesResponse{
+				{
+					TotalCount: 0,
+					Instances: ecs.Instances{
+						Instance: []ecs.Instance{},
+					},
+				},
+			},
+		}
+
+		instances, err := pluginSPI.DescribeAllInstances(mockClient, "non-existent-machine", "", nil)
+		Expect(err).To(BeNil())
+		Expect(instances).To(BeEmpty())
+		Expect(mockClient.callCount).To(Equal(1))
+	})
+
+	It("should return error when API call fails", func() {
+		mockClient := &mockECSClient{
+			err: fmt.Errorf("API Error: failed to describe instances"),
+		}
+
+		instances, err := pluginSPI.DescribeAllInstances(mockClient, "", "", providerSpec.Tags)
+		Expect(err).NotTo(BeNil())
+		Expect(err.Error()).To(ContainSubstring("API Error"))
+		Expect(instances).To(BeNil())
+		Expect(mockClient.callCount).To(Equal(1))
 	})
 
 	It("should generate request of deleting instance", func() {
