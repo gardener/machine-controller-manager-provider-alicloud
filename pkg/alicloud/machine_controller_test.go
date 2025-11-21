@@ -189,12 +189,18 @@ var _ = Describe("Machine Controller", func() {
 				deleteMachineResponse = &driver.DeleteMachineResponse{
 					LastKnownState: "ECS instance(s) [i-mockinstanceid] deleted for machine mock-machine-name",
 				}
+				instances = []ecs.Instance{
+					{
+						Status:       "Running",
+						InstanceId:   instanceID,
+						InstanceName: machineName,
+					},
+				}
 			)
 
 			gomock.InOrder(
 				mockPluginSPI.EXPECT().NewECSClient(deleteMachineRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
-				mockPluginSPI.EXPECT().NewDescribeInstancesRequest(deleteMachineRequest.Machine.Name, "", providerSpec.Tags).Return(describeInstanceRequest, nil),
-				mockECSClient.EXPECT().DescribeInstances(describeInstanceRequest).Return(describeInstanceResponse, nil),
+				mockPluginSPI.EXPECT().DescribeAllInstances(mockECSClient, deleteMachineRequest.Machine.Name, "", providerSpec.Tags).Return(instances, nil),
 				mockPluginSPI.EXPECT().NewDeleteInstanceRequest(instanceID, true).Return(deleteInstanceRequest, nil),
 				mockECSClient.EXPECT().DeleteInstance(deleteInstanceRequest).Return(deleteInstanceResponse, nil),
 			)
@@ -218,12 +224,18 @@ var _ = Describe("Machine Controller", func() {
 				ProviderID: providerID,
 				NodeName:   nodeName,
 			}
+			instances = []ecs.Instance{
+				{
+					Status:       "Running",
+					InstanceId:   instanceID,
+					InstanceName: machineName,
+				},
+			}
 		)
 
 		gomock.InOrder(
 			mockPluginSPI.EXPECT().NewECSClient(getMachineStatusRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
-			mockPluginSPI.EXPECT().NewDescribeInstancesRequest(getMachineStatusRequest.Machine.Name, "", providerSpec.Tags).Return(describeInstanceRequest, nil),
-			mockECSClient.EXPECT().DescribeInstances(describeInstanceRequest).Return(describeInstanceResponse, nil),
+			mockPluginSPI.EXPECT().DescribeAllInstances(mockECSClient, getMachineStatusRequest.Machine.Name, "", providerSpec.Tags).Return(instances, nil),
 		)
 
 		response, err := mockMachinePlugin.GetMachineStatus(ctx, getMachineStatusRequest)
@@ -242,12 +254,18 @@ var _ = Describe("Machine Controller", func() {
 					providerID: machineName,
 				},
 			}
+			instances = []ecs.Instance{
+				{
+					Status:       "Running",
+					InstanceId:   instanceID,
+					InstanceName: machineName,
+				},
+			}
 		)
 
 		gomock.InOrder(
 			mockPluginSPI.EXPECT().NewECSClient(listMachinesRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
-			mockPluginSPI.EXPECT().NewDescribeInstancesRequest("", "", providerSpec.Tags).Return(describeInstanceRequest, nil),
-			mockECSClient.EXPECT().DescribeInstances(describeInstanceRequest).Return(describeInstanceResponse, nil),
+			mockPluginSPI.EXPECT().DescribeAllInstances(mockECSClient, "", "", providerSpec.Tags).Return(instances, nil),
 		)
 
 		response, err := mockMachinePlugin.ListMachines(ctx, listMachinesRequest)

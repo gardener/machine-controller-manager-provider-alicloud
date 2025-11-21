@@ -16,6 +16,7 @@ import (
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog/v2"
 
 	api "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/apis"
 )
@@ -58,6 +59,7 @@ type PluginSPI interface {
 	NewDeleteInstanceRequest(instanceID string, force bool) (*ecs.DeleteInstanceRequest, error)
 	NewInstanceDataDisks(disks []api.AlicloudDataDisk, machineName string) []ecs.RunInstancesDataDisk
 	NewRunInstanceTags(tags map[string]string) ([]ecs.RunInstancesTag, error)
+	DescribeAllInstances(client ECSClient, machineName, instanceID string, tags map[string]string) ([]ecs.Instance, error)
 }
 
 // PluginSPIImpl is the real implementation of SPI interface that makes the calls to the provider SDK.
@@ -214,6 +216,38 @@ func (pluginSPI *PluginSPIImpl) NewRunInstanceTags(tags map[string]string) ([]ec
 	}
 
 	return runInstancesTags, nil
+}
+
+// DescribeAllInstances handles paginated responses from the Alibaba Cloud ECS API and returns all matching instances.
+func (pluginSPI *PluginSPIImpl) DescribeAllInstances(client ECSClient, machineName, instanceID string, tags map[string]string) ([]ecs.Instance, error) {
+	request, err := pluginSPI.NewDescribeInstancesRequest(machineName, instanceID, tags)
+	if err != nil {
+		return nil, err
+	}
+
+	var allInstances []ecs.Instance
+	pageNumber := 1
+
+	for {
+		request.PageNumber = requests.NewInteger(pageNumber)
+		response, err := client.DescribeInstances(request)
+		if err != nil {
+			return nil, err
+		}
+
+		allInstances = append(allInstances, response.Instances.Instance...)
+
+		klog.V(4).Infof("Fetched %d/%d instances and %d pages so far", len(allInstances), response.TotalCount, pageNumber-1)
+
+		// Exit if we have fetched all pages
+		if len(allInstances) >= response.TotalCount {
+			break
+		}
+
+		pageNumber++
+	}
+
+	return allInstances, nil
 }
 
 // extractCredentialsFromData extracts and trims a value from the given data map. The first key that exists is being
