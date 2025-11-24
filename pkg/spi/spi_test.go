@@ -5,7 +5,8 @@
 package spi
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	ecs "github.com/alibabacloud-go/ecs-20140526/v7/client"
+	"github.com/alibabacloud-go/tea/tea"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/pointer"
@@ -73,16 +74,17 @@ var _ = Describe("Plugin SPI", func() {
 	It("should generate request of running instance", func() {
 		request, err := pluginSPI.NewRunInstancesRequest(providerSpec, machineName, userData)
 		Expect(err).To(BeNil())
-		Expect(request.SystemDiskCategory).To(Equal("cloud_efficiency"))
-		Expect(request.SystemDiskSize).To(Equal("50"))
+		Expect(*request.SystemDisk.Category).To(Equal("cloud_efficiency"))
+		Expect(*request.SystemDisk.Size).To(Equal("50"))
 		Expect(request.DataDisk).To(BeNil())
-		Expect(*request.Tag).To(ConsistOf(
-			ecs.RunInstancesTag{
-				Key:   "kubernetes.io/cluster/shoot--mcm",
-				Value: "1",
-			}, ecs.RunInstancesTag{
-				Key:   "kubernetes.io/role/worker/shoot--mcm",
-				Value: "1",
+		Expect(request.Tag).To(ConsistOf(
+			&ecs.RunInstancesRequestTag{
+				Key:   tea.String("kubernetes.io/cluster/shoot--mcm"),
+				Value: tea.String("1"),
+			},
+			&ecs.RunInstancesRequestTag{
+				Key:   tea.String("kubernetes.io/role/worker/shoot--mcm"),
+				Value: tea.String("1"),
 			},
 		))
 	})
@@ -90,31 +92,32 @@ var _ = Describe("Plugin SPI", func() {
 	It("should generate request of describing instance by machine Name", func() {
 		request, err := pluginSPI.NewDescribeInstancesRequest(machineName, "", nil)
 		Expect(err).To(BeNil())
-		Expect(request.InstanceName).To(Equal("plugin-test-machine"))
-		Expect(request.InstanceIds).To(BeEmpty())
+		Expect(*request.InstanceName).To(Equal("plugin-test-machine"))
+		Expect(request.InstanceIds).To(BeNil())
 		Expect(request.Tag).To(BeNil())
 	})
 
 	It("should generate request of describing instance by provider ID", func() {
 		request, err := pluginSPI.NewDescribeInstancesRequest("", instanceID, nil)
 		Expect(err).To(BeNil())
-		Expect(request.InstanceName).To(BeEmpty())
-		Expect(request.InstanceIds).To(Equal("[\"i-u66kfxzhu3q9vm3l4a\"]"))
+		Expect(request.InstanceName).To(BeNil())
+		Expect(*request.InstanceIds).To(Equal("[\"i-u66kfxzhu3q9vm3l4a\"]"))
 		Expect(request.Tag).To(BeNil())
 	})
 
 	It("should generate request of describing instance by tags", func() {
 		request, err := pluginSPI.NewDescribeInstancesRequest("", "", providerSpec.Tags)
 		Expect(err).To(BeNil())
-		Expect(request.InstanceName).To(BeEmpty())
-		Expect(request.InstanceIds).To(BeEmpty())
-		Expect(*request.Tag).To(ConsistOf(
-			ecs.DescribeInstancesTag{
-				Key:   "kubernetes.io/cluster/shoot--mcm",
-				Value: "1",
-			}, ecs.DescribeInstancesTag{
-				Key:   "kubernetes.io/role/worker/shoot--mcm",
-				Value: "1",
+		Expect(request.InstanceName).To(BeNil())
+		Expect(request.InstanceIds).To(BeNil())
+		Expect(request.Tag).To(ConsistOf(
+			&ecs.DescribeInstancesRequestTag{
+				Key:   tea.String("kubernetes.io/cluster/shoot--mcm"),
+				Value: tea.String("1"),
+			},
+			&ecs.DescribeInstancesRequestTag{
+				Key:   tea.String("kubernetes.io/role/worker/shoot--mcm"),
+				Value: tea.String("1"),
 			},
 		))
 	})
@@ -122,30 +125,37 @@ var _ = Describe("Plugin SPI", func() {
 	It("should generate request of deleting instance", func() {
 		request, err := pluginSPI.NewDeleteInstanceRequest(instanceID, true)
 		Expect(err).To(BeNil())
-		Expect(request.InstanceId).To(Equal("i-u66kfxzhu3q9vm3l4a"))
-		Expect(request.Force.GetValue()).To(Equal(true))
+		Expect(*request.InstanceId).To(Equal("i-u66kfxzhu3q9vm3l4a"))
+		Expect(*request.Force).To(Equal(true))
 	})
 
 	It("should generate instance data disks", func() {
 		dataDisks := pluginSPI.NewInstanceDataDisks(alicloudDataDisks, machineName)
 		Expect(dataDisks).NotTo(BeEmpty())
 		Expect(dataDisks).To(ConsistOf(
-			ecs.RunInstancesDataDisk{
-				Category:           "DiskEphemeralSSD",
-				Encrypted:          "true",
-				DiskName:           "plugin-test-machine-disk-1-data-disk",
-				Size:               "50",
-				DeleteWithInstance: "",
-			}, ecs.RunInstancesDataDisk{
-				Encrypted:          "true",
-				DiskName:           "plugin-test-machine-disk-2-data-disk",
-				Size:               "100",
-				DeleteWithInstance: "false",
-			}, ecs.RunInstancesDataDisk{
-				Encrypted:          "false",
-				DiskName:           "plugin-test-machine-disk-3-data-disk",
-				Size:               "20",
-				DeleteWithInstance: "true",
+			&ecs.RunInstancesRequestDataDisk{
+				Category:           tea.String("DiskEphemeralSSD"),
+				Encrypted:          tea.String("true"),
+				DiskName:           tea.String("plugin-test-machine-disk-1-data-disk"),
+				Size:               tea.Int32(int32(50)),
+				DeleteWithInstance: nil,
+				Description:        tea.String(""),
+			},
+			&ecs.RunInstancesRequestDataDisk{
+				Category:           tea.String(""),
+				Encrypted:          tea.String("true"),
+				DiskName:           tea.String("plugin-test-machine-disk-2-data-disk"),
+				Size:               tea.Int32(int32(100)),
+				DeleteWithInstance: tea.Bool(false),
+				Description:        tea.String(""),
+			},
+			&ecs.RunInstancesRequestDataDisk{
+				Category:           tea.String(""),
+				Encrypted:          tea.String("false"),
+				DiskName:           tea.String("plugin-test-machine-disk-3-data-disk"),
+				Size:               tea.Int32(20),
+				DeleteWithInstance: tea.Bool(true),
+				Description:        tea.String(""),
 			},
 		))
 	})

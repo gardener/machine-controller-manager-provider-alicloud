@@ -3,7 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	ecs "github.com/alibabacloud-go/ecs-20140526/v7/client"
+	"github.com/alibabacloud-go/tea/tea"
 	api "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/apis"
 	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
@@ -70,17 +71,25 @@ func getMachines(machineClass *v1alpha1.MachineClass, secretData map[string][]by
 func getOrphanedInstances(tagName string, tagValue string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) ([]string, error) {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
 	var instancesID []string
-	var tags = &[]ecs.DescribeInstancesTag{{Key: tagName, Value: tagValue}}
-	input := ecs.CreateDescribeInstancesRequest()
-	input.Status = "running"
+	var tags = []*ecs.DescribeInstancesRequestTag{{Key: &tagName, Value: &tagValue}}
+	input := ecs.DescribeInstancesRequest{}
+	input.Status = tea.String("running")
 	input.Tag = tags
 
-	result, err := sess.DescribeInstances(input)
+	var providerSpec *api.ProviderSpec
+	err := json.Unmarshal([]byte(machineClass.ProviderSpec.Raw), &providerSpec)
+	if err != nil {
+		providerSpec = nil
+		log.Printf("Failed to unmarshal ProviderSpec: %v", err)
+	}
+	input.RegionId = tea.String(providerSpec.Region)
+
+	result, err := sess.DescribeInstances(&input)
 	if err != nil {
 		return instancesID, err
 	}
-	for _, instance := range result.Instances.Instance {
-		instancesID = append(instancesID, instance.InstanceId)
+	for _, instance := range result.Body.Instances.Instance {
+		instancesID = append(instancesID, *instance.InstanceId)
 	}
 	return instancesID, nil
 }
@@ -89,16 +98,25 @@ func getOrphanedInstances(tagName string, tagValue string, machineClass *v1alpha
 func getOrphanedDisks(tagName string, tagValue string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) ([]string, error) {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
 	var volumeID []string
-	var tags = &[]ecs.DescribeDisksTag{{Key: tagName, Value: tagValue}}
-	input := ecs.CreateDescribeDisksRequest()
-	input.Status = "Available"
+	var tags = []*ecs.DescribeDisksRequestTag{{Key: &tagName, Value: &tagValue}}
+	input := ecs.DescribeDisksRequest{}
+	input.Status = tea.String("Available")
 	input.Tag = tags
-	result, err := sess.DescribeDisks(input)
+
+	var providerSpec *api.ProviderSpec
+	err := json.Unmarshal([]byte(machineClass.ProviderSpec.Raw), &providerSpec)
+	if err != nil {
+		providerSpec = nil
+		log.Printf("Failed to unmarshal ProviderSpec: %v", err)
+	}
+	input.RegionId = tea.String(providerSpec.Region)
+
+	result, err := sess.DescribeDisks(&input)
 	if err != nil {
 		return volumeID, err
 	}
-	for _, disk := range result.Disks.Disk {
-		volumeID = append(volumeID, disk.DiskId)
+	for _, disk := range result.Body.Disks.Disk {
+		volumeID = append(volumeID, *disk.DiskId)
 	}
 	return volumeID, nil
 }
@@ -107,16 +125,24 @@ func getOrphanedDisks(tagName string, tagValue string, machineClass *v1alpha1.Ma
 func getOrphanedNICs(tagName string, tagValue string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) ([]string, error) {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
 	var nicIDs []string
-	var tags = &[]ecs.DescribeNetworkInterfacesTag{{Key: tagName, Value: tagValue}}
-	input := ecs.CreateDescribeNetworkInterfacesRequest()
+	var tags = []*ecs.DescribeNetworkInterfacesRequestTag{{Key: &tagName, Value: &tagValue}}
+	input := ecs.DescribeNetworkInterfacesRequest{}
 	input.Tag = tags
 
-	result, err := sess.DescribeNetworkInterfaces(input)
+	var providerSpec *api.ProviderSpec
+	err := json.Unmarshal([]byte(machineClass.ProviderSpec.Raw), &providerSpec)
+	if err != nil {
+		providerSpec = nil
+		log.Printf("Failed to unmarshal ProviderSpec: %v", err)
+	}
+	input.RegionId = tea.String(providerSpec.Region)
+
+	result, err := sess.DescribeNetworkInterfaces(&input)
 	if err != nil {
 		return nicIDs, err
 	}
-	for _, nic := range result.NetworkInterfaceSets.NetworkInterfaceSet {
-		nicIDs = append(nicIDs, nic.NetworkInterfaceId)
+	for _, nic := range result.Body.NetworkInterfaceSets.NetworkInterfaceSet {
+		nicIDs = append(nicIDs, *nic.NetworkInterfaceId)
 	}
 	return nicIDs, nil
 }
@@ -149,9 +175,9 @@ func cleanOrphanResources(instanceIds []string, volumeIds []string, NICIds []str
 
 func deleteNIC(nicID string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) error {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
-	input := ecs.CreateDeleteNetworkInterfaceRequest()
-	input.NetworkInterfaceId = nicID
-	_, err := sess.DeleteNetworkInterface(input)
+	input := ecs.DeleteNetworkInterfaceRequest{}
+	input.NetworkInterfaceId = tea.String(nicID)
+	_, err := sess.DeleteNetworkInterface(&input)
 	if err != nil {
 		return err
 	}
@@ -160,9 +186,9 @@ func deleteNIC(nicID string, machineClass *v1alpha1.MachineClass, secretData map
 
 func deleteVolume(diskID string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) error {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
-	input := ecs.CreateDeleteDiskRequest()
-	input.DiskId = diskID
-	_, err := sess.DeleteDisk(input)
+	input := ecs.DeleteDiskRequest{}
+	input.DiskId = tea.String(diskID)
+	_, err := sess.DeleteDisk(&input)
 	if err != nil {
 		return err
 	}
@@ -171,9 +197,9 @@ func deleteVolume(diskID string, machineClass *v1alpha1.MachineClass, secretData
 
 func terminateInstance(instanceID string, machineClass *v1alpha1.MachineClass, secretData map[string][]byte) error {
 	sess := newSession(machineClass, &v1.Secret{Data: secretData})
-	input := ecs.CreateDeleteInstanceRequest()
-	input.InstanceId = instanceID
-	_, err := sess.DeleteInstance(input)
+	input := ecs.DeleteInstanceRequest{}
+	input.InstanceId = tea.String(instanceID)
+	_, err := sess.DeleteInstance(&input)
 	if err != nil {
 		return err
 	}
