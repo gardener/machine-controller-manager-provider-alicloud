@@ -53,18 +53,18 @@ func (mr *MockPluginSPIMockRecorder) NewDeleteInstanceRequest(arg0, arg1 interfa
 }
 
 // NewDescribeInstancesRequest mocks base method.
-func (m *MockPluginSPI) NewDescribeInstancesRequest(arg0, arg1 string, arg2 map[string]string) (*client.DescribeInstancesRequest, error) {
+func (m *MockPluginSPI) NewDescribeInstancesRequest(arg0, arg1, arg2 string, arg3 map[string]string) (*client.DescribeInstancesRequest, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewDescribeInstancesRequest", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "NewDescribeInstancesRequest", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(*client.DescribeInstancesRequest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NewDescribeInstancesRequest indicates an expected call of NewDescribeInstancesRequest.
-func (mr *MockPluginSPIMockRecorder) NewDescribeInstancesRequest(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockPluginSPIMockRecorder) NewDescribeInstancesRequest(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewDescribeInstancesRequest", reflect.TypeOf((*MockPluginSPI)(nil).NewDescribeInstancesRequest), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewDescribeInstancesRequest", reflect.TypeOf((*MockPluginSPI)(nil).NewDescribeInstancesRequest), arg0, arg1, arg2, arg3)
 }
 
 // NewECSClient mocks base method.

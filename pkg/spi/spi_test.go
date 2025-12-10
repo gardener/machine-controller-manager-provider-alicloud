@@ -90,7 +90,7 @@ var _ = Describe("Plugin SPI", func() {
 	})
 
 	It("should generate request of describing instance by machine Name", func() {
-		request, err := pluginSPI.NewDescribeInstancesRequest(machineName, "", nil)
+		request, err := pluginSPI.NewDescribeInstancesRequest(machineName, "", "", nil)
 		Expect(err).To(BeNil())
 		Expect(*request.InstanceName).To(Equal("plugin-test-machine"))
 		Expect(request.InstanceIds).To(BeNil())
@@ -98,7 +98,7 @@ var _ = Describe("Plugin SPI", func() {
 	})
 
 	It("should generate request of describing instance by provider ID", func() {
-		request, err := pluginSPI.NewDescribeInstancesRequest("", instanceID, nil)
+		request, err := pluginSPI.NewDescribeInstancesRequest("", instanceID, "", nil)
 		Expect(err).To(BeNil())
 		Expect(request.InstanceName).To(BeNil())
 		Expect(*request.InstanceIds).To(Equal("[\"i-u66kfxzhu3q9vm3l4a\"]"))
@@ -106,7 +106,7 @@ var _ = Describe("Plugin SPI", func() {
 	})
 
 	It("should generate request of describing instance by tags", func() {
-		request, err := pluginSPI.NewDescribeInstancesRequest("", "", providerSpec.Tags)
+		request, err := pluginSPI.NewDescribeInstancesRequest("", "", "", providerSpec.Tags)
 		Expect(err).To(BeNil())
 		Expect(request.InstanceName).To(BeNil())
 		Expect(request.InstanceIds).To(BeNil())

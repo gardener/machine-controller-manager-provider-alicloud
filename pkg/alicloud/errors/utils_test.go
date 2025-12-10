@@ -29,11 +29,10 @@ func TestCreateMachineErrorToMCMErrorCode(t *testing.T) {
 	}
 	g := NewWithT(t)
 	for _, entry := range table {
-		inputError := tea.NewSDKError(map[string]interface{}{
+		g.Expect(GetMCMErrorCodeForCreateMachine(tea.NewSDKError(map[string]any{
 			"statusCode": 403,
 			"code":       entry.inputAliErrorCode,
 			"message":    "some error happened on the server side",
-		})
-		g.Expect(GetMCMErrorCodeForCreateMachine(inputError)).To(Equal(entry.expectedCode))
+		}))).To(Equal(entry.expectedCode))
 	}
 }

@@ -8,7 +8,6 @@ package alicloud
 import (
 	"context"
 	"fmt"
-	"github.com/alibabacloud-go/tea/tea"
 	maperror "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/errors"
 	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
@@ -78,16 +77,14 @@ func (plugin *MachinePlugin) CreateMachine(_ context.Context, req *driver.Create
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	request.RegionId = tea.String(providerSpec.Region)
-
 	response, err := client.RunInstances(request)
 	if err != nil {
 		return nil, status.Error(maperror.GetMCMErrorCodeForCreateMachine(err), err.Error())
 	}
 
-	instanceID := response.Body.InstanceIdSets.InstanceIdSet[0]
-	if instanceID == nil {
-		errMessage := fmt.Sprintf("ECS instance creation failed for machine %s: instance ID is nil", req.Machine.Name)
+	instanceID, err := GetInstanceIDsFromRunInstancesResponse(response)
+	if err != nil {
+		errMessage := fmt.Sprintf("ECS instance creation failed for machine %s: %v", req.Machine.Name, err)
 		return nil, status.Error(codes.Internal, errMessage)
 	}
 
@@ -141,21 +138,25 @@ func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.Delete
 
 	if req.Machine.Spec.ProviderID != "" {
 		instanceID := decodeProviderID(req.Machine.Spec.ProviderID)
-		describeInstanceRequest, err := plugin.SPI.NewDescribeInstancesRequest("", instanceID, providerSpec.Tags)
+		describeInstanceRequest, err := plugin.SPI.NewDescribeInstancesRequest("", instanceID, providerSpec.Region, providerSpec.Tags)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		describeInstanceRequest.RegionId = tea.String(providerSpec.Region)
+
 		response, err := client.DescribeInstances(describeInstanceRequest)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		instances := response.Body.Instances.Instance
+		instances, err := GetInstancesFromDescribeInstancesResponse(response)
+		if err != nil {
+			klog.Errorf("error while fetching instance details for instanceID %s: %v", instanceID, err)
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 		if len(instances) == 0 {
 			// No running instance exists with the given machineID
 			errMessage := fmt.Sprintf("ECS instance not found backing this machine object with Provider ID: %v", req.Machine.Spec.ProviderID)
-			klog.V(2).Info(errMessage)
+			klog.Error(errMessage)
 
 			return nil, status.Error(codes.NotFound, errMessage)
 		}
@@ -175,17 +176,21 @@ func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.Delete
 		lastKnownState = fmt.Sprintf("ECS instance %s deleted for machine %s", instanceID, req.Machine.Name)
 	} else {
 		klog.V(2).Infof("No provider ID set for machine %s. Checking if backing ECS instance is present.", req.Machine.Name)
-		describeInstanceRequest, err := plugin.SPI.NewDescribeInstancesRequest(req.Machine.Name, "", providerSpec.Tags)
+		describeInstanceRequest, err := plugin.SPI.NewDescribeInstancesRequest(req.Machine.Name, "", providerSpec.Region, providerSpec.Tags)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		describeInstanceRequest.RegionId = tea.String(providerSpec.Region)
+
 		response, err := client.DescribeInstances(describeInstanceRequest)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		instances := response.Body.Instances.Instance
+		instances, err := GetInstancesFromDescribeInstancesResponse(response)
+		if err != nil {
+			klog.Errorf("error while fetching instance details for machine object %s: %v", req.Machine.Name, err)
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 		if len(instances) == 0 {
 			// No running instance exists with the given machineName
 			klog.V(2).Infof("No backing ECS instance found. Termination successful for machine object %q", req.Machine.Name)
@@ -254,12 +259,10 @@ func (plugin *MachinePlugin) GetMachineStatus(_ context.Context, req *driver.Get
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	request, err := plugin.SPI.NewDescribeInstancesRequest(req.Machine.Name, "", providerSpec.Tags)
+	request, err := plugin.SPI.NewDescribeInstancesRequest(req.Machine.Name, "", providerSpec.Region, providerSpec.Tags)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
-	request.RegionId = tea.String(providerSpec.Region)
 
 	response, err := client.DescribeInstances(request)
 	if err != nil {
@@ -323,12 +326,10 @@ func (plugin *MachinePlugin) ListMachines(_ context.Context, req *driver.ListMac
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	request, err := plugin.SPI.NewDescribeInstancesRequest("", "", providerSpec.Tags)
+	request, err := plugin.SPI.NewDescribeInstancesRequest("", "", providerSpec.Region, providerSpec.Tags)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
-	request.RegionId = tea.String(providerSpec.Region)
 
 	response, err := client.DescribeInstances(request)
 	if err != nil {

@@ -56,7 +56,7 @@ type ECSClient interface {
 type PluginSPI interface {
 	NewECSClient(secret *corev1.Secret, region string) (ECSClient, error)
 	NewRunInstancesRequest(providerSpec *api.ProviderSpec, machineName string, userData []byte) (*ecs.RunInstancesRequest, error)
-	NewDescribeInstancesRequest(machineName, instanceID string, tags map[string]string) (*ecs.DescribeInstancesRequest, error)
+	NewDescribeInstancesRequest(machineName, instanceID, regionID string, tags map[string]string) (*ecs.DescribeInstancesRequest, error)
 	NewDeleteInstanceRequest(instanceID string, force bool) (*ecs.DeleteInstanceRequest, error)
 	NewInstanceDataDisks(disks []api.AlicloudDataDisk, machineName string) []*ecs.RunInstancesRequestDataDisk
 	NewRunInstanceTags(tags map[string]string) ([]*ecs.RunInstancesRequestTag, error)
@@ -133,8 +133,12 @@ func (pluginSPI *PluginSPIImpl) NewRunInstancesRequest(providerSpec *api.Provide
 }
 
 // NewDescribeInstancesRequest returns a new request of describe instance.
-func (pluginSPI *PluginSPIImpl) NewDescribeInstancesRequest(machineName, instanceID string, tags map[string]string) (*ecs.DescribeInstancesRequest, error) {
+func (pluginSPI *PluginSPIImpl) NewDescribeInstancesRequest(machineName, instanceID, regionID string, tags map[string]string) (*ecs.DescribeInstancesRequest, error) {
 	request := ecs.DescribeInstancesRequest{}
+
+	if regionID != "" {
+		request.RegionId = &regionID
+	}
 
 	if instanceID != "" {
 		request.InstanceIds = tea.String("[\"" + instanceID + "\"]")
