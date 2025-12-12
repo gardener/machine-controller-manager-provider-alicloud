@@ -269,7 +269,11 @@ func (plugin *MachinePlugin) GetMachineStatus(_ context.Context, req *driver.Get
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	instances := response.Body.Instances.Instance
+	instances, err := GetInstancesFromDescribeInstancesResponse(response)
+	if err != nil {
+		klog.Errorf("error while fetching instance details for machine object %s: %v", req.Machine.Name, err)
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	if len(instances) == 0 {
 		// No running instance exists with the given machineID
 		klog.V(2).Infof("No matching instances found with %q", req.Machine.Name)
@@ -304,7 +308,7 @@ func (plugin *MachinePlugin) GetMachineStatus(_ context.Context, req *driver.Get
 // RESPONSE PARAMETERS (driver.ListMachinesResponse)
 // MachineList           map<string,string>  A map containing the keys as the MachineID and value as the MachineName
 //
-//	for all machines who where possibly created by this ProviderSpec
+//	for all machines which were possibly created by this ProviderSpec
 func (plugin *MachinePlugin) ListMachines(_ context.Context, req *driver.ListMachinesRequest) (*driver.ListMachinesResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
@@ -336,7 +340,11 @@ func (plugin *MachinePlugin) ListMachines(_ context.Context, req *driver.ListMac
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	instances := response.Body.Instances.Instance
+	instances, err := GetInstancesFromDescribeInstancesResponse(response)
+	if err != nil {
+		klog.Errorf("error while fetching instance details for machines: %v", err)
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	listOfMachines := make(map[string]string)
 	for _, instance := range instances {
 		machineName := *instance.InstanceName

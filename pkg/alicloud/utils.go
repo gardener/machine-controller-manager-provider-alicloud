@@ -10,7 +10,6 @@ func GetInstanceIDsFromRunInstancesResponse(resp *ecs.RunInstancesResponse) (*st
 	if resp == nil ||
 		resp.Body == nil ||
 		resp.Body.InstanceIdSets == nil ||
-		resp.Body.InstanceIdSets.InstanceIdSet == nil ||
 		len(resp.Body.InstanceIdSets.InstanceIdSet) == 0 {
 
 		return nil, fmt.Errorf("instance ID missing")
