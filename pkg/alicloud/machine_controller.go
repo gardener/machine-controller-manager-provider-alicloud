@@ -82,7 +82,7 @@ func (plugin *MachinePlugin) CreateMachine(_ context.Context, req *driver.Create
 		return nil, status.Error(maperror.GetMCMErrorCodeForCreateMachine(err), err.Error())
 	}
 
-	instanceID, err := GetInstanceIDsFromRunInstancesResponse(response)
+	instanceID, err := GetInstanceIDFromRunInstancesResponse(response)
 	if err != nil {
 		errMessage := fmt.Sprintf("ECS instance creation failed for machine %s: %v", req.Machine.Name, err)
 		return nil, status.Error(codes.Internal, errMessage)

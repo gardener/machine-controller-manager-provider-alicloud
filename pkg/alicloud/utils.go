@@ -5,8 +5,8 @@ import (
 	ecs "github.com/alibabacloud-go/ecs-20140526/v7/client"
 )
 
-// GetInstanceIDsFromRunInstancesResponse is a utility function to extract instance ID from RunInstancesResponse
-func GetInstanceIDsFromRunInstancesResponse(resp *ecs.RunInstancesResponse) (*string, error) {
+// GetInstanceIDFromRunInstancesResponse is a utility function to extract instance ID from RunInstancesResponse
+func GetInstanceIDFromRunInstancesResponse(resp *ecs.RunInstancesResponse) (*string, error) {
 	if resp == nil ||
 		resp.Body == nil ||
 		resp.Body.InstanceIdSets == nil ||
