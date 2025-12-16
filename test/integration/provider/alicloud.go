@@ -108,9 +108,8 @@ func getOrphanedDisks(tagName string, tagValue string, machineClass *v1alpha1.Ma
 	input.Tag = tags
 
 	var providerSpec *api.ProviderSpec
-	err := json.Unmarshal([]byte(machineClass.ProviderSpec.Raw), &providerSpec)
+	err := json.Unmarshal(machineClass.ProviderSpec.Raw, &providerSpec)
 	if err != nil {
-		providerSpec = nil
 		log.Printf("Failed to unmarshal ProviderSpec: %v", err)
 	}
 	input.RegionId = tea.String(providerSpec.Region)
