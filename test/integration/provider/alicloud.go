@@ -5,14 +5,14 @@ import (
 	"fmt"
 	ecs "github.com/alibabacloud-go/ecs-20140526/v7/client"
 	"github.com/alibabacloud-go/tea/tea"
+	providerDriver "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud"
 	api "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/apis"
 	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
-
-	providerDriver "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/klog/v2"
 	"log"
 )
 
@@ -77,9 +77,8 @@ func getOrphanedInstances(tagName string, tagValue string, machineClass *v1alpha
 	input.Tag = tags
 
 	var providerSpec *api.ProviderSpec
-	err := json.Unmarshal([]byte(machineClass.ProviderSpec.Raw), &providerSpec)
+	err := json.Unmarshal(machineClass.ProviderSpec.Raw, &providerSpec)
 	if err != nil {
-		providerSpec = nil
 		log.Printf("Failed to unmarshal ProviderSpec: %v", err)
 	}
 	input.RegionId = tea.String(providerSpec.Region)
@@ -88,7 +87,12 @@ func getOrphanedInstances(tagName string, tagValue string, machineClass *v1alpha
 	if err != nil {
 		return instancesID, err
 	}
-	for _, instance := range result.Body.Instances.Instance {
+	instances, err := providerDriver.GetInstancesFromDescribeInstancesResponse(result)
+	if err != nil {
+		klog.Errorf("error while fetching instance details for machines: %v", err)
+		return nil, err
+	}
+	for _, instance := range instances {
 		instancesID = append(instancesID, *instance.InstanceId)
 	}
 	return instancesID, nil
@@ -115,10 +119,26 @@ func getOrphanedDisks(tagName string, tagValue string, machineClass *v1alpha1.Ma
 	if err != nil {
 		return volumeID, err
 	}
-	for _, disk := range result.Body.Disks.Disk {
+	disks, err := getDisksFromDescribeDisksResponse(result)
+	if err != nil {
+		klog.Errorf("error while fetching disk details for volumes: %v", err)
+		return nil, err
+	}
+	for _, disk := range disks {
 		volumeID = append(volumeID, *disk.DiskId)
 	}
 	return volumeID, nil
+}
+
+func getDisksFromDescribeDisksResponse(resp *ecs.DescribeDisksResponse) ([]*ecs.DescribeDisksResponseBodyDisksDisk, error) {
+	if resp == nil ||
+		resp.Body == nil ||
+		resp.Body.Disks == nil {
+
+		return nil, fmt.Errorf("invalid response")
+	}
+
+	return resp.Body.Disks.Disk, nil
 }
 
 // getOrphanedNICs returns list of Orphan NICs
@@ -130,9 +150,8 @@ func getOrphanedNICs(tagName string, tagValue string, machineClass *v1alpha1.Mac
 	input.Tag = tags
 
 	var providerSpec *api.ProviderSpec
-	err := json.Unmarshal([]byte(machineClass.ProviderSpec.Raw), &providerSpec)
+	err := json.Unmarshal(machineClass.ProviderSpec.Raw, &providerSpec)
 	if err != nil {
-		providerSpec = nil
 		log.Printf("Failed to unmarshal ProviderSpec: %v", err)
 	}
 	input.RegionId = tea.String(providerSpec.Region)
