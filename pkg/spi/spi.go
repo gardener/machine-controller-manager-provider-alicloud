@@ -224,7 +224,7 @@ func (pluginSPI *PluginSPIImpl) NewRunInstanceTags(tags map[string]string) ([]*e
 	}
 
 	if !hasCluster || !hasRole {
-		err := fmt.Errorf("tags should at least contains 2 keys, which are prefixed with kubernetes.io/cluster and kubernetes.io/role")
+		err := fmt.Errorf("tags should at least contain 2 keys, which are prefixed with kubernetes.io/cluster and kubernetes.io/role")
 		return nil, err
 	}
 
