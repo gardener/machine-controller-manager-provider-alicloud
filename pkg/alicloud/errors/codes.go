@@ -27,6 +27,8 @@ const (
 	InvalidVpcZoneNotSupported = "InvalidVpcZone.NotSupported"
 	// InvalidZoneIDNotSupportShareEncryptedImage : Creating instances by shared encrypted images is not supported in this zone.
 	InvalidZoneIDNotSupportShareEncryptedImage = "InvalidZoneId.NotSupportShareEncryptedImage"
+	// InvalidResourceTypeNotSupported : The specified resource does not exist. Please try other zone or configuration.
+	InvalidResourceTypeNotSupported = "InvalidResourceType.NotSupported"
 	// InvalidInstanceTypeZoneNotSupported : The specified zone does not support this instancetype.
 	InvalidInstanceTypeZoneNotSupported = "InvalidInstanceType.ZoneNotSupported"
 	// ResourceNotAvailable : Resource you requested is not available in this region or zone.

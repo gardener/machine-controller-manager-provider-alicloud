@@ -23,7 +23,19 @@ type responseContent struct {
 
 func TestCreateMachineErrorToMCMErrorCode(t *testing.T) {
 	table := []input{
+		{inputAliErrorCode: QuotaExceededDiskCapacity, expectedCode: codes.ResourceExhausted},
+		{inputAliErrorCode: QuotaExceededElasticQuota, expectedCode: codes.ResourceExhausted},
+		{inputAliErrorCode: OperationDeniedCloudSSDNotSupported, expectedCode: codes.ResourceExhausted},
 		{inputAliErrorCode: OperationDeniedNoStock, expectedCode: codes.ResourceExhausted},
+		{inputAliErrorCode: OperationDeniedZoneNotAllowed, expectedCode: codes.ResourceExhausted},
+		{inputAliErrorCode: OperationDeniedZoneSystemCategoryNotMatch, expectedCode: codes.ResourceExhausted},
+		{inputAliErrorCode: ZoneNotOnSale, expectedCode: codes.ResourceExhausted},
+		{inputAliErrorCode: ZoneNotOpen, expectedCode: codes.ResourceExhausted},
+		{inputAliErrorCode: InvalidVpcZoneNotSupported, expectedCode: codes.ResourceExhausted},
+		{inputAliErrorCode: InvalidResourceTypeNotSupported, expectedCode: codes.ResourceExhausted},
+		{inputAliErrorCode: InvalidInstanceTypeZoneNotSupported, expectedCode: codes.ResourceExhausted},
+		{inputAliErrorCode: InvalidZoneIDNotSupportShareEncryptedImage, expectedCode: codes.ResourceExhausted},
+		{inputAliErrorCode: ResourceNotAvailable, expectedCode: codes.ResourceExhausted},
 		// InvalidImageId can't be resolved by trying another zone, so not treated as ResourceExhausted
 		{inputAliErrorCode: "InvalidImageId.NotFound", expectedCode: codes.Internal},
 	}

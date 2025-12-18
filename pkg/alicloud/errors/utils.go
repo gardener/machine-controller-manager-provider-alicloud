@@ -17,7 +17,19 @@ func GetMCMErrorCodeForCreateMachine(err error) codes.Code {
 	ok := errors.As(err, &aliErr)
 	if ok {
 		switch *aliErr.Code {
-		case QuotaExceededDiskCapacity, QuotaExceededElasticQuota, OperationDeniedCloudSSDNotSupported, OperationDeniedNoStock, OperationDeniedZoneNotAllowed, OperationDeniedZoneSystemCategoryNotMatch, ZoneNotOnSale, ZoneNotOpen, InvalidVpcZoneNotSupported, InvalidInstanceTypeZoneNotSupported, InvalidZoneIDNotSupportShareEncryptedImage, ResourceNotAvailable:
+		case QuotaExceededDiskCapacity,
+			QuotaExceededElasticQuota,
+			OperationDeniedCloudSSDNotSupported,
+			OperationDeniedNoStock,
+			OperationDeniedZoneNotAllowed,
+			OperationDeniedZoneSystemCategoryNotMatch,
+			ZoneNotOnSale,
+			ZoneNotOpen,
+			InvalidVpcZoneNotSupported,
+			InvalidResourceTypeNotSupported,
+			InvalidInstanceTypeZoneNotSupported,
+			InvalidZoneIDNotSupportShareEncryptedImage,
+			ResourceNotAvailable:
 			return codes.ResourceExhausted
 		default:
 			return codes.Internal
