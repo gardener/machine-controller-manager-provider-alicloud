@@ -8,9 +8,9 @@ package alicloud
 import (
 	"context"
 	"encoding/json"
+	"github.com/alibabacloud-go/tea/tea"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	ecs "github.com/alibabacloud-go/ecs-20140526/v7/client"
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/golang/mock/gomock"
@@ -83,29 +83,34 @@ var _ = Describe("Machine Controller", func() {
 
 		runInstancesRequest = &ecs.RunInstancesRequest{}
 		runInstanceResponse = &ecs.RunInstancesResponse{
-			InstanceIdSets: ecs.InstanceIdSets{
-				InstanceIdSet: []string{
-					instanceID,
+			Body: &ecs.RunInstancesResponseBody{
+				InstanceIdSets: &ecs.RunInstancesResponseBodyInstanceIdSets{
+					InstanceIdSet: []*string{
+						tea.String(instanceID),
+					},
 				},
 			},
 		}
 
 		deleteInstanceRequest = &ecs.DeleteInstanceRequest{
-			InstanceId: instanceID,
-			Force:      requests.NewBoolean(true),
+			InstanceId: tea.String(instanceID),
+			Force:      tea.Bool(true),
 		}
 		deleteInstanceResponse = &ecs.DeleteInstanceResponse{}
 
 		describeInstanceRequest = &ecs.DescribeInstancesRequest{
-			InstanceIds: "[\"" + instanceID + "\"]",
+			InstanceIds: tea.String("[\"" + instanceID + "\"]"),
+			RegionId:    tea.String(providerSpec.Region),
 		}
 		describeInstanceResponse = &ecs.DescribeInstancesResponse{
-			Instances: ecs.Instances{
-				Instance: []ecs.Instance{
-					{
-						Status:       "Running",
-						InstanceId:   instanceID,
-						InstanceName: machineName,
+			Body: &ecs.DescribeInstancesResponseBody{
+				Instances: &ecs.DescribeInstancesResponseBodyInstances{
+					Instance: []*ecs.DescribeInstancesResponseBodyInstancesInstance{
+						{
+							Status:       tea.String("Running"),
+							InstanceId:   tea.String(instanceID),
+							InstanceName: tea.String(machineName),
+						},
 					},
 				},
 			},
@@ -169,7 +174,7 @@ var _ = Describe("Machine Controller", func() {
 
 			gomock.InOrder(
 				mockPluginSPI.EXPECT().NewECSClient(deleteMachineRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
-				mockPluginSPI.EXPECT().NewDescribeInstancesRequest("", instanceID, providerSpec.Tags).Return(describeInstanceRequest, nil),
+				mockPluginSPI.EXPECT().NewDescribeInstancesRequest("", instanceID, providerSpec.Region, providerSpec.Tags).Return(describeInstanceRequest, nil),
 				mockECSClient.EXPECT().DescribeInstances(describeInstanceRequest).Return(describeInstanceResponse, nil),
 				mockPluginSPI.EXPECT().NewDeleteInstanceRequest(instanceID, true).Return(deleteInstanceRequest, nil),
 				mockECSClient.EXPECT().DeleteInstance(deleteInstanceRequest).Return(deleteInstanceResponse, nil),
@@ -193,7 +198,7 @@ var _ = Describe("Machine Controller", func() {
 
 			gomock.InOrder(
 				mockPluginSPI.EXPECT().NewECSClient(deleteMachineRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
-				mockPluginSPI.EXPECT().NewDescribeInstancesRequest(deleteMachineRequest.Machine.Name, "", providerSpec.Tags).Return(describeInstanceRequest, nil),
+				mockPluginSPI.EXPECT().NewDescribeInstancesRequest(deleteMachineRequest.Machine.Name, "", providerSpec.Region, providerSpec.Tags).Return(describeInstanceRequest, nil),
 				mockECSClient.EXPECT().DescribeInstances(describeInstanceRequest).Return(describeInstanceResponse, nil),
 				mockPluginSPI.EXPECT().NewDeleteInstanceRequest(instanceID, true).Return(deleteInstanceRequest, nil),
 				mockECSClient.EXPECT().DeleteInstance(deleteInstanceRequest).Return(deleteInstanceResponse, nil),
@@ -222,7 +227,7 @@ var _ = Describe("Machine Controller", func() {
 
 		gomock.InOrder(
 			mockPluginSPI.EXPECT().NewECSClient(getMachineStatusRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
-			mockPluginSPI.EXPECT().NewDescribeInstancesRequest(getMachineStatusRequest.Machine.Name, "", providerSpec.Tags).Return(describeInstanceRequest, nil),
+			mockPluginSPI.EXPECT().NewDescribeInstancesRequest(getMachineStatusRequest.Machine.Name, "", providerSpec.Region, providerSpec.Tags).Return(describeInstanceRequest, nil),
 			mockECSClient.EXPECT().DescribeInstances(describeInstanceRequest).Return(describeInstanceResponse, nil),
 		)
 
@@ -246,7 +251,7 @@ var _ = Describe("Machine Controller", func() {
 
 		gomock.InOrder(
 			mockPluginSPI.EXPECT().NewECSClient(listMachinesRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
-			mockPluginSPI.EXPECT().NewDescribeInstancesRequest("", "", providerSpec.Tags).Return(describeInstanceRequest, nil),
+			mockPluginSPI.EXPECT().NewDescribeInstancesRequest("", "", providerSpec.Region, providerSpec.Tags).Return(describeInstanceRequest, nil),
 			mockECSClient.EXPECT().DescribeInstances(describeInstanceRequest).Return(describeInstanceResponse, nil),
 		)
 

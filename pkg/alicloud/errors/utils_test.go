@@ -5,10 +5,9 @@
 package errors
 
 import (
-	"encoding/json"
+	"github.com/alibabacloud-go/tea/tea"
 	"testing"
 
-	alierr "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	. "github.com/onsi/gomega"
 )
@@ -30,9 +29,10 @@ func TestCreateMachineErrorToMCMErrorCode(t *testing.T) {
 	}
 	g := NewWithT(t)
 	for _, entry := range table {
-		jsonResponse, err := json.Marshal(responseContent{entry.inputAliErrorCode})
-		g.Expect(err).To(BeNil())
-		inputError := alierr.NewServerError(403, string(jsonResponse), "some error happened on the server side")
-		g.Expect(GetMCMErrorCodeForCreateMachine(inputError)).To(Equal(entry.expectedCode))
+		g.Expect(GetMCMErrorCodeForCreateMachine(tea.NewSDKError(map[string]any{
+			"statusCode": 403,
+			"code":       entry.inputAliErrorCode,
+			"message":    "some error happened on the server side",
+		}))).To(Equal(entry.expectedCode))
 	}
 }

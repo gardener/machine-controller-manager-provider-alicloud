@@ -8,7 +8,6 @@ package alicloud
 import (
 	"context"
 	"fmt"
-
 	maperror "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/errors"
 	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
@@ -59,7 +58,7 @@ func (plugin *MachinePlugin) CreateMachine(_ context.Context, req *driver.Create
 
 	// Check if provider in the MachineClass is the provider we support
 	if req.MachineClass.Provider != ProviderAlicloud {
-		err := fmt.Errorf("Requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
+		err := fmt.Errorf("requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -83,14 +82,18 @@ func (plugin *MachinePlugin) CreateMachine(_ context.Context, req *driver.Create
 		return nil, status.Error(maperror.GetMCMErrorCodeForCreateMachine(err), err.Error())
 	}
 
-	instanceID := response.InstanceIdSets.InstanceIdSet[0]
+	instanceID, err := GetInstanceIDFromRunInstancesResponse(response)
+	if err != nil {
+		errMessage := fmt.Sprintf("ECS instance creation failed for machine %s: %v", req.Machine.Name, err)
+		return nil, status.Error(codes.Internal, errMessage)
+	}
 
-	klog.V(2).Infof("ECS instance %q created for machine %q", instanceID, req.Machine.Name)
+	klog.V(2).Infof("ECS instance %q created for machine %q", *instanceID, req.Machine.Name)
 
 	return &driver.CreateMachineResponse{
-		ProviderID:     encodeProviderID(providerSpec.Region, instanceID),
-		NodeName:       instanceIDToName(instanceID),
-		LastKnownState: fmt.Sprintf("ECS instance %s created for machine %s", instanceID, req.Machine.Name),
+		ProviderID:     encodeProviderID(providerSpec.Region, *instanceID),
+		NodeName:       instanceIDToName(*instanceID),
+		LastKnownState: fmt.Sprintf("ECS instance %s created for machine %s", *instanceID, req.Machine.Name),
 	}, nil
 }
 
@@ -117,7 +120,7 @@ func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.Delete
 
 	// Check if provider in the MachineClass is the provider we support
 	if req.MachineClass.Provider != ProviderAlicloud {
-		err := fmt.Errorf("Requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
+		err := fmt.Errorf("requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -135,25 +138,30 @@ func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.Delete
 
 	if req.Machine.Spec.ProviderID != "" {
 		instanceID := decodeProviderID(req.Machine.Spec.ProviderID)
-		describeInstanceRequest, err := plugin.SPI.NewDescribeInstancesRequest("", instanceID, providerSpec.Tags)
+		describeInstanceRequest, err := plugin.SPI.NewDescribeInstancesRequest("", instanceID, providerSpec.Region, providerSpec.Tags)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+
 		response, err := client.DescribeInstances(describeInstanceRequest)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		instances := response.Instances.Instance
+		instances, err := GetInstancesFromDescribeInstancesResponse(response)
+		if err != nil {
+			klog.Errorf("error while fetching instance details for instanceID %s: %v", instanceID, err)
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 		if len(instances) == 0 {
 			// No running instance exists with the given machineID
 			errMessage := fmt.Sprintf("ECS instance not found backing this machine object with Provider ID: %v", req.Machine.Spec.ProviderID)
-			klog.V(2).Info(errMessage)
+			klog.Error(errMessage)
 
 			return nil, status.Error(codes.NotFound, errMessage)
 		}
 
-		if instances[0].Status != "Running" && instances[0].Status != "Stopped" {
+		if *instances[0].Status != "Running" && *instances[0].Status != "Stopped" {
 			return nil, status.Error(codes.Unavailable, "ECS instance not in running/stopped state")
 		}
 
@@ -168,16 +176,21 @@ func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.Delete
 		lastKnownState = fmt.Sprintf("ECS instance %s deleted for machine %s", instanceID, req.Machine.Name)
 	} else {
 		klog.V(2).Infof("No provider ID set for machine %s. Checking if backing ECS instance is present.", req.Machine.Name)
-		describeInstanceRequest, err := plugin.SPI.NewDescribeInstancesRequest(req.Machine.Name, "", providerSpec.Tags)
+		describeInstanceRequest, err := plugin.SPI.NewDescribeInstancesRequest(req.Machine.Name, "", providerSpec.Region, providerSpec.Tags)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+
 		response, err := client.DescribeInstances(describeInstanceRequest)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		instances := response.Instances.Instance
+		instances, err := GetInstancesFromDescribeInstancesResponse(response)
+		if err != nil {
+			klog.Errorf("error while fetching instance details for machine object %s: %v", req.Machine.Name, err)
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 		if len(instances) == 0 {
 			// No running instance exists with the given machineName
 			klog.V(2).Infof("No backing ECS instance found. Termination successful for machine object %q", req.Machine.Name)
@@ -186,7 +199,7 @@ func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.Delete
 
 		var deletedInstances = make([]string, 0, len(instances))
 		for _, instance := range instances {
-			deleteInstanceRequest, err := plugin.SPI.NewDeleteInstanceRequest(instance.InstanceId, true)
+			deleteInstanceRequest, err := plugin.SPI.NewDeleteInstanceRequest(*instance.InstanceId, true)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
@@ -194,8 +207,8 @@ func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.Delete
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
-			klog.V(3).Infof("ECS instance %s deleted for machine %s", instance.InstanceId, instance.InstanceName)
-			deletedInstances = append(deletedInstances, instance.InstanceId)
+			klog.V(3).Infof("ECS instance %s deleted for machine %s", *instance.InstanceId, *instance.InstanceName)
+			deletedInstances = append(deletedInstances, *instance.InstanceId)
 		}
 		lastKnownState = fmt.Sprintf("ECS instance(s) %v deleted for machine %s", deletedInstances, req.Machine.Name)
 	}
@@ -231,7 +244,7 @@ func (plugin *MachinePlugin) GetMachineStatus(_ context.Context, req *driver.Get
 
 	// Check if provider in the MachineClass is the provider we support
 	if req.MachineClass.Provider != ProviderAlicloud {
-		err := fmt.Errorf("Requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
+		err := fmt.Errorf("requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -246,25 +259,30 @@ func (plugin *MachinePlugin) GetMachineStatus(_ context.Context, req *driver.Get
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	request, err := plugin.SPI.NewDescribeInstancesRequest(req.Machine.Name, "", providerSpec.Tags)
+	request, err := plugin.SPI.NewDescribeInstancesRequest(req.Machine.Name, "", providerSpec.Region, providerSpec.Tags)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
 	response, err := client.DescribeInstances(request)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	instances := response.Instances.Instance
+	instances, err := GetInstancesFromDescribeInstancesResponse(response)
+	if err != nil {
+		klog.Errorf("error while fetching instance details for machine object %s: %v", req.Machine.Name, err)
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	if len(instances) == 0 {
 		// No running instance exists with the given machineID
 		klog.V(2).Infof("No matching instances found with %q", req.Machine.Name)
 		errMessage := fmt.Sprintf("VM instance not found backing this machine object %v", req.Machine.Name)
 		return nil, status.Error(codes.NotFound, errMessage)
 	} else if len(instances) > 1 {
-		instanceIDs := []string{}
+		var instanceIDs []string
 		for _, instance := range instances {
-			instanceIDs = append(instanceIDs, instance.InstanceId)
+			instanceIDs = append(instanceIDs, *instance.InstanceId)
 		}
 
 		errMessage := fmt.Sprintf("multiple VM instances found backing this machine object. IDs for all backing VMs - %v ", instanceIDs)
@@ -273,14 +291,14 @@ func (plugin *MachinePlugin) GetMachineStatus(_ context.Context, req *driver.Get
 
 	klog.V(3).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
 	return &driver.GetMachineStatusResponse{
-		NodeName:   instanceIDToName(instances[0].InstanceId),
-		ProviderID: encodeProviderID(providerSpec.Region, instances[0].InstanceId),
+		NodeName:   instanceIDToName(*instances[0].InstanceId),
+		ProviderID: encodeProviderID(providerSpec.Region, *instances[0].InstanceId),
 	}, nil
 }
 
-// ListMachines lists all the machines possibilly created by a providerSpec
+// ListMachines lists all the machines possibly created by a providerSpec
 // Identifying machines created by a given providerSpec depends on the OPTIONAL IMPLEMENTATION LOGIC
-// you have used to identify machines created by a providerSpec. It could be tags/resource-groups etc
+// you have used to identify machines created by a providerSpec. It could be tags/resource-groups etc.
 // OPTIONAL METHOD
 //
 // REQUEST PARAMETERS (driver.ListMachinesRequest)
@@ -290,7 +308,7 @@ func (plugin *MachinePlugin) GetMachineStatus(_ context.Context, req *driver.Get
 // RESPONSE PARAMETERS (driver.ListMachinesResponse)
 // MachineList           map<string,string>  A map containing the keys as the MachineID and value as the MachineName
 //
-//	for all machine's who where possibilly created by this ProviderSpec
+//	for all machines which were possibly created by this ProviderSpec
 func (plugin *MachinePlugin) ListMachines(_ context.Context, req *driver.ListMachinesRequest) (*driver.ListMachinesResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
@@ -298,7 +316,7 @@ func (plugin *MachinePlugin) ListMachines(_ context.Context, req *driver.ListMac
 
 	// Check if provider in the MachineClass is the provider we support
 	if req.MachineClass.Provider != ProviderAlicloud {
-		err := fmt.Errorf("Requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
+		err := fmt.Errorf("requested for Provider '%s', we only support '%s'", req.MachineClass.Provider, ProviderAlicloud)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -312,20 +330,25 @@ func (plugin *MachinePlugin) ListMachines(_ context.Context, req *driver.ListMac
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	request, err := plugin.SPI.NewDescribeInstancesRequest("", "", providerSpec.Tags)
+	request, err := plugin.SPI.NewDescribeInstancesRequest("", "", providerSpec.Region, providerSpec.Tags)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
 	response, err := client.DescribeInstances(request)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	instances := response.Instances.Instance
+	instances, err := GetInstancesFromDescribeInstancesResponse(response)
+	if err != nil {
+		klog.Errorf("error while fetching instance details for machines: %v", err)
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	listOfMachines := make(map[string]string)
 	for _, instance := range instances {
-		machineName := instance.InstanceName
-		listOfMachines[encodeProviderID(providerSpec.Region, instance.InstanceId)] = machineName
+		machineName := *instance.InstanceName
+		listOfMachines[encodeProviderID(providerSpec.Region, *instance.InstanceId)] = machineName
 	}
 
 	return &driver.ListMachinesResponse{

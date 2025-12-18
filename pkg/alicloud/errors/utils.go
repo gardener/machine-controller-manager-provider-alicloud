@@ -6,15 +6,17 @@
 package errors
 
 import (
-	alierr "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
+	"errors"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 )
 
 // GetMCMErrorCodeForCreateMachine takes the error returned from the EC2API during the CreateMachine call and returns the corresponding MCM error code.
 func GetMCMErrorCodeForCreateMachine(err error) codes.Code {
-	aliErr, ok := err.(*alierr.ServerError)
+	var aliErr *tea.SDKError
+	ok := errors.As(err, &aliErr)
 	if ok {
-		switch aliErr.ErrorCode() {
+		switch *aliErr.Code {
 		case QuotaExceededDiskCapacity, QuotaExceededElasticQuota, OperationDeniedCloudSSDNotSupported, OperationDeniedNoStock, OperationDeniedZoneNotAllowed, OperationDeniedZoneSystemCategoryNotMatch, ZoneNotOnSale, ZoneNotOpen, InvalidVpcZoneNotSupported, InvalidInstanceTypeZoneNotSupported, InvalidZoneIDNotSupportShareEncryptedImage, ResourceNotAvailable:
 			return codes.ResourceExhausted
 		default:
