@@ -8,6 +8,7 @@ package alicloud
 import (
 	"context"
 	"fmt"
+
 	maperror "github.com/gardener/machine-controller-manager-provider-alicloud/pkg/alicloud/errors"
 	"github.com/gardener/machine-controller-manager-provider-alicloud/pkg/spi"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
@@ -53,7 +54,7 @@ import (
 // This logic is used by safety controller to delete orphan VMs which are not backed by any machine CRD
 func (plugin *MachinePlugin) CreateMachine(_ context.Context, req *driver.CreateMachineRequest) (*driver.CreateMachineResponse, error) {
 	// Log messages to track request
-	klog.V(2).Infof("Machine creation request has been recieved for %q", req.Machine.Name)
+	klog.V(2).Infof("Machine creation request has been received for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine creation request has been processed for %q", req.Machine.Name)
 
 	// Check if provider in the MachineClass is the provider we support
@@ -115,7 +116,7 @@ func (plugin *MachinePlugin) InitializeMachine(_ context.Context, _ *driver.Init
 //	Could be helpful to continue operations in future requests.
 func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.DeleteMachineRequest) (*driver.DeleteMachineResponse, error) {
 	// Log messages to track delete request
-	klog.V(2).Infof("Machine deletion request has been recieved for %q", req.Machine.Name)
+	klog.V(2).Infof("Machine deletion request has been received for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine deletion request has been processed for %q", req.Machine.Name)
 
 	// Check if provider in the MachineClass is the provider we support
@@ -143,12 +144,7 @@ func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.Delete
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		response, err := client.DescribeInstances(describeInstanceRequest)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		instances, err := GetInstancesFromDescribeInstancesResponse(response)
+		instances, err := plugin.GetAllInstances(client, describeInstanceRequest)
 		if err != nil {
 			klog.Errorf("error while fetching instance details for instanceID %s: %v", instanceID, err)
 			return nil, status.Error(codes.Internal, err.Error())
@@ -181,12 +177,7 @@ func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.Delete
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		response, err := client.DescribeInstances(describeInstanceRequest)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		instances, err := GetInstancesFromDescribeInstancesResponse(response)
+		instances, err := plugin.GetAllInstances(client, describeInstanceRequest)
 		if err != nil {
 			klog.Errorf("error while fetching instance details for machine object %s: %v", req.Machine.Name, err)
 			return nil, status.Error(codes.Internal, err.Error())
@@ -239,7 +230,7 @@ func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.Delete
 // The request should return a NOT_FOUND (5) status error code if the machine is not existing
 func (plugin *MachinePlugin) GetMachineStatus(_ context.Context, req *driver.GetMachineStatusRequest) (*driver.GetMachineStatusResponse, error) {
 	// Log messages to track start and end of request
-	klog.V(2).Infof("Get request has been recieved for %q", req.Machine.Name)
+	klog.V(2).Infof("Get request has been received for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
 
 	// Check if provider in the MachineClass is the provider we support
@@ -264,12 +255,7 @@ func (plugin *MachinePlugin) GetMachineStatus(_ context.Context, req *driver.Get
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	response, err := client.DescribeInstances(request)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	instances, err := GetInstancesFromDescribeInstancesResponse(response)
+	instances, err := plugin.GetAllInstances(client, request)
 	if err != nil {
 		klog.Errorf("error while fetching instance details for machine object %s: %v", req.Machine.Name, err)
 		return nil, status.Error(codes.Internal, err.Error())
@@ -311,8 +297,8 @@ func (plugin *MachinePlugin) GetMachineStatus(_ context.Context, req *driver.Get
 //	for all machines which were possibly created by this ProviderSpec
 func (plugin *MachinePlugin) ListMachines(_ context.Context, req *driver.ListMachinesRequest) (*driver.ListMachinesResponse, error) {
 	// Log messages to track start and end of request
-	klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
-	defer klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
+	klog.V(2).Infof("List machines request has been received for %q", req.MachineClass.Name)
+	defer klog.V(2).Infof("List machines request has been received for %q", req.MachineClass.Name)
 
 	// Check if provider in the MachineClass is the provider we support
 	if req.MachineClass.Provider != ProviderAlicloud {
@@ -335,12 +321,7 @@ func (plugin *MachinePlugin) ListMachines(_ context.Context, req *driver.ListMac
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	response, err := client.DescribeInstances(request)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	instances, err := GetInstancesFromDescribeInstancesResponse(response)
+	instances, err := plugin.GetAllInstances(client, request)
 	if err != nil {
 		klog.Errorf("error while fetching instance details for machines: %v", err)
 		return nil, status.Error(codes.Internal, err.Error())
@@ -365,7 +346,7 @@ func (plugin *MachinePlugin) ListMachines(_ context.Context, req *driver.ListMac
 // VolumeIDs             []string                             VolumeIDs is a repeated list of VolumeIDs.
 func (plugin *MachinePlugin) GetVolumeIDs(_ context.Context, req *driver.GetVolumeIDsRequest) (*driver.GetVolumeIDsResponse, error) {
 	// Log messages to track start and end of request
-	klog.V(2).Infof("GetVolumeIDs request has been recieved for %q", req.PVSpecs)
+	klog.V(2).Infof("GetVolumeIDs request has been received for %q", req.PVSpecs)
 	defer klog.V(2).Infof("GetVolumeIDs request has been processed successfully for %q", req.PVSpecs)
 
 	var volumeIDs []string
@@ -381,7 +362,7 @@ func (plugin *MachinePlugin) GetVolumeIDs(_ context.Context, req *driver.GetVolu
 	}
 
 	klog.V(2).Infof("GetVolumeIDs machines request has been processed successfully (%d/%d).", len(volumeIDs), len(req.PVSpecs))
-	klog.V(4).Infof("GetVolumeIDs volumneIDs: %v", volumeIDs)
+	klog.V(4).Infof("GetVolumeIDs: %v", volumeIDs)
 
 	return &driver.GetVolumeIDsResponse{
 		VolumeIDs: volumeIDs,
