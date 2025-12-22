@@ -51,14 +51,11 @@ func (plugin *MachinePlugin) GetAllInstances(client spi.ECSClient, request *ecs.
 		if err != nil {
 			return nil, err
 		}
-
 		pageInstances, err := GetInstancesFromDescribeInstancesResponse(response)
 		if err != nil {
 			return nil, err
 		}
-
 		instances = append(instances, pageInstances...)
-
 		if response.Body.TotalCount != nil && len(instances) >= int(*response.Body.TotalCount) {
 			break
 		}
