@@ -8,6 +8,8 @@ package alicloud
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+
 	"github.com/alibabacloud-go/tea/tea"
 
 	ecs "github.com/alibabacloud-go/ecs-20140526/v7/client"
@@ -104,6 +106,7 @@ var _ = Describe("Machine Controller", func() {
 		}
 		describeInstanceResponse = &ecs.DescribeInstancesResponse{
 			Body: &ecs.DescribeInstancesResponseBody{
+				TotalCount: tea.Int32(1),
 				Instances: &ecs.DescribeInstancesResponseBodyInstances{
 					Instance: []*ecs.DescribeInstancesResponseBodyInstancesInstance{
 						{
@@ -210,6 +213,98 @@ var _ = Describe("Machine Controller", func() {
 			Expect(response).To(Equal(deleteMachineResponse))
 			deleteMachineRequest.Machine.Spec.ProviderID = providerID //Need to add this value back as other tests are dependent on this
 		})
+
+		It("when machine.spec.providerID is not set and multiple instances exist across pages", func() {
+			var (
+				deleteMachineRequest = &driver.DeleteMachineRequest{
+					Machine:      machine,
+					MachineClass: machineClass,
+					Secret:       providerSecret,
+				}
+				pageSize = 2
+				// Expect all instances to be deleted
+				deleteMachineResponse = &driver.DeleteMachineResponse{
+					LastKnownState: fmt.Sprintf("ECS instance(s) %v deleted for machine %s",
+						func() []string {
+							ids := make([]string, 0, pageSize+1)
+							for i := 0; i < pageSize; i++ {
+								ids = append(ids, fmt.Sprintf("i-page1-%d", i))
+							}
+							ids = append(ids, "i-page2-0")
+							return ids
+						}(),
+						machineName),
+				}
+			)
+
+			page1Instances := make([]*ecs.DescribeInstancesResponseBodyInstancesInstance, pageSize)
+			for i := 0; i < pageSize; i++ {
+				id := fmt.Sprintf("i-page1-%d", i)
+				name := fmt.Sprintf("machine-page1-%d", i)
+				page1Instances[i] = &ecs.DescribeInstancesResponseBodyInstancesInstance{
+					InstanceId:   tea.String(id),
+					InstanceName: tea.String(name),
+				}
+			}
+			page2Instances := []*ecs.DescribeInstancesResponseBodyInstancesInstance{
+				{
+					InstanceId:   tea.String("i-page2-0"),
+					InstanceName: tea.String("machine-page2-0"),
+				},
+			}
+
+			describeInstanceResponsePage1 := &ecs.DescribeInstancesResponse{
+				Body: &ecs.DescribeInstancesResponseBody{
+					TotalCount: tea.Int32(int32(pageSize + 1)),
+					Instances: &ecs.DescribeInstancesResponseBodyInstances{
+						Instance: page1Instances,
+					},
+				},
+			}
+			describeInstanceResponsePage2 := &ecs.DescribeInstancesResponse{
+				Body: &ecs.DescribeInstancesResponseBody{
+					TotalCount: tea.Int32(int32(pageSize + 1)),
+					Instances: &ecs.DescribeInstancesResponseBodyInstances{
+						Instance: page2Instances,
+					},
+				},
+			}
+
+			gomock.InOrder(
+				mockPluginSPI.EXPECT().NewECSClient(deleteMachineRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
+				mockPluginSPI.EXPECT().NewDescribeInstancesRequest(deleteMachineRequest.Machine.Name, "", providerSpec.Region, providerSpec.Tags).Return(describeInstanceRequest, nil),
+
+				mockECSClient.EXPECT().DescribeInstances(gomock.AssignableToTypeOf(describeInstanceRequest)).DoAndReturn(func(req *ecs.DescribeInstancesRequest) (*ecs.DescribeInstancesResponse, error) {
+					if *req.PageNumber != 1 {
+						return nil, fmt.Errorf("expected PageNumber 1, got %d", *req.PageNumber)
+					}
+					return describeInstanceResponsePage1, nil
+				}),
+				mockECSClient.EXPECT().DescribeInstances(gomock.AssignableToTypeOf(describeInstanceRequest)).DoAndReturn(func(req *ecs.DescribeInstancesRequest) (*ecs.DescribeInstancesResponse, error) {
+					if *req.PageNumber != 2 {
+						return nil, fmt.Errorf("expected PageNumber 2, got %d", *req.PageNumber)
+					}
+					return describeInstanceResponsePage2, nil
+				}),
+			)
+
+			for _, inst := range page1Instances {
+				req := &ecs.DeleteInstanceRequest{InstanceId: inst.InstanceId, Force: tea.Bool(true)}
+				mockPluginSPI.EXPECT().NewDeleteInstanceRequest(*inst.InstanceId, true).Return(req, nil)
+				mockECSClient.EXPECT().DeleteInstance(req).Return(&ecs.DeleteInstanceResponse{}, nil)
+			}
+			for _, inst := range page2Instances {
+				req := &ecs.DeleteInstanceRequest{InstanceId: inst.InstanceId, Force: tea.Bool(true)}
+				mockPluginSPI.EXPECT().NewDeleteInstanceRequest(*inst.InstanceId, true).Return(req, nil)
+				mockECSClient.EXPECT().DeleteInstance(req).Return(&ecs.DeleteInstanceResponse{}, nil)
+			}
+
+			deleteMachineRequest.Machine.Spec.ProviderID = ""
+			response, err := mockMachinePlugin.DeleteMachine(ctx, deleteMachineRequest)
+			Expect(err).To(BeNil())
+			Expect(response).To(Equal(deleteMachineResponse))
+			deleteMachineRequest.Machine.Spec.ProviderID = providerID
+		})
 	})
 
 	It("should get machine status successfully", func() {
@@ -253,6 +348,85 @@ var _ = Describe("Machine Controller", func() {
 			mockPluginSPI.EXPECT().NewECSClient(listMachinesRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
 			mockPluginSPI.EXPECT().NewDescribeInstancesRequest("", "", providerSpec.Region, providerSpec.Tags).Return(describeInstanceRequest, nil),
 			mockECSClient.EXPECT().DescribeInstances(describeInstanceRequest).Return(describeInstanceResponse, nil),
+		)
+
+		response, err := mockMachinePlugin.ListMachines(ctx, listMachinesRequest)
+		Expect(err).To(BeNil())
+		Expect(response).To(Equal(listMachinesResponse))
+	})
+
+	It("should list machines successfully across multiple pages", func() {
+		var (
+			listMachinesRequest = &driver.ListMachinesRequest{
+				MachineClass: machineClass,
+				Secret:       providerSecret,
+			}
+			pageSize       = 2
+			page1Instances = make([]*ecs.DescribeInstancesResponseBodyInstancesInstance, pageSize)
+			page2Instances = []*ecs.DescribeInstancesResponseBodyInstancesInstance{
+				{
+					InstanceId:   tea.String("i-page2-0"),
+					InstanceName: tea.String("machine-page2-0"),
+				},
+			}
+		)
+
+		for i := range pageSize {
+			id := fmt.Sprintf("i-page1-%d", i)
+			name := fmt.Sprintf("machine-page1-%d", i)
+			page1Instances[i] = &ecs.DescribeInstancesResponseBodyInstancesInstance{
+				InstanceId:   tea.String(id),
+				InstanceName: tea.String(name),
+			}
+		}
+
+		var (
+			describeInstanceResponsePage1 = &ecs.DescribeInstancesResponse{
+				Body: &ecs.DescribeInstancesResponseBody{
+					TotalCount: tea.Int32(int32(pageSize + 1)),
+					Instances: &ecs.DescribeInstancesResponseBodyInstances{
+						Instance: page1Instances,
+					},
+				},
+			}
+			describeInstanceResponsePage2 = &ecs.DescribeInstancesResponse{
+				Body: &ecs.DescribeInstancesResponseBody{
+					TotalCount: tea.Int32(int32(pageSize + 1)),
+					Instances: &ecs.DescribeInstancesResponseBodyInstances{
+						Instance: page2Instances,
+					},
+				},
+			}
+		)
+
+		expectedMachineList := make(map[string]string)
+		for _, inst := range page1Instances {
+			expectedMachineList[encodeProviderID(providerSpec.Region, *inst.InstanceId)] = *inst.InstanceName
+		}
+		for _, inst := range page2Instances {
+			expectedMachineList[encodeProviderID(providerSpec.Region, *inst.InstanceId)] = *inst.InstanceName
+		}
+		listMachinesResponse := &driver.ListMachinesResponse{
+			MachineList: expectedMachineList,
+		}
+
+		gomock.InOrder(
+			mockPluginSPI.EXPECT().NewECSClient(listMachinesRequest.Secret, providerSpec.Region).Return(mockECSClient, nil),
+			mockPluginSPI.EXPECT().NewDescribeInstancesRequest("", "", providerSpec.Region, providerSpec.Tags).Return(describeInstanceRequest, nil),
+
+			mockECSClient.EXPECT().DescribeInstances(gomock.AssignableToTypeOf(describeInstanceRequest)).DoAndReturn(func(req *ecs.DescribeInstancesRequest) (*ecs.DescribeInstancesResponse, error) {
+				if *req.PageNumber != 1 {
+					return nil, fmt.Errorf("expected PageNumber 1, got %d", *req.PageNumber)
+				}
+				return describeInstanceResponsePage1, nil
+			}),
+
+			mockECSClient.EXPECT().DescribeInstances(gomock.AssignableToTypeOf(describeInstanceRequest)).DoAndReturn(func(req *ecs.DescribeInstancesRequest) (*ecs.DescribeInstancesResponse, error) {
+				if *req.PageNumber != 2 {
+					return nil, fmt.Errorf("expected PageNumber 2, got %d", *req.PageNumber)
+				}
+				return describeInstanceResponsePage2, nil
+			}),
 		)
 
 		response, err := mockMachinePlugin.ListMachines(ctx, listMachinesRequest)
