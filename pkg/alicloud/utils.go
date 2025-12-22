@@ -54,12 +54,12 @@ func (plugin *MachinePlugin) GetAllInstances(client spi.ECSClient, request *ecs.
 			return nil, err
 		}
 		instances = append(instances, pageInstances...)
+		pageNumber++
+		klog.V(3).Infof("Fetched %d/%d instances (Page %d)", len(instances), ptr.Deref(response.Body.TotalCount, 0), pageNumber)
+
 		if ptr.Deref(response.Body.NextToken, "") == "" {
 			break
 		}
-		pageNumber++
-		klog.V(3).Infof("Fetched %d/%d instances so far (Page %d)", len(instances), ptr.Deref(response.Body.TotalCount, 0), pageNumber)
-
 		request.NextToken = response.Body.NextToken
 	}
 	return instances, nil

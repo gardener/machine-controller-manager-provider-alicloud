@@ -232,7 +232,7 @@ var _ = Describe("Machine Controller", func() {
 					LastKnownState: fmt.Sprintf("ECS instance(s) %v deleted for machine %s",
 						func() []string {
 							ids := make([]string, 0, pageSize+1)
-							for i := 0; i < pageSize; i++ {
+							for i := range pageSize {
 								ids = append(ids, fmt.Sprintf("i-page1-%d", i))
 							}
 							ids = append(ids, "i-page2-0")
@@ -243,7 +243,7 @@ var _ = Describe("Machine Controller", func() {
 			)
 
 			page1Instances := make([]*ecs.DescribeInstancesResponseBodyInstancesInstance, pageSize)
-			for i := 0; i < pageSize; i++ {
+			for i := range pageSize {
 				id := fmt.Sprintf("i-page1-%d", i)
 				name := fmt.Sprintf("machine-page1-%d", i)
 				page1Instances[i] = &ecs.DescribeInstancesResponseBodyInstancesInstance{
