@@ -131,6 +131,11 @@ var _ = Describe("Machine Controller", func() {
 		mockPluginSPI = mockspi.NewMockPluginSPI(ctrl)
 		mockECSClient = mockclient.NewMockECSClient(ctrl)
 		mockMachinePlugin = NewAlicloudPlugin(mockPluginSPI)
+
+		describeInstanceRequest = &ecs.DescribeInstancesRequest{
+			InstanceIds: tea.String("[\"" + instanceID + "\"]"),
+			RegionId:    tea.String(providerSpec.Region),
+		}
 	})
 
 	AfterEach(func() {
@@ -255,7 +260,7 @@ var _ = Describe("Machine Controller", func() {
 
 			describeInstanceResponsePage1 := &ecs.DescribeInstancesResponse{
 				Body: &ecs.DescribeInstancesResponseBody{
-					TotalCount: tea.Int32(int32(pageSize + 1)),
+					NextToken: tea.String("token-page-2"),
 					Instances: &ecs.DescribeInstancesResponseBodyInstances{
 						Instance: page1Instances,
 					},
@@ -263,7 +268,7 @@ var _ = Describe("Machine Controller", func() {
 			}
 			describeInstanceResponsePage2 := &ecs.DescribeInstancesResponse{
 				Body: &ecs.DescribeInstancesResponseBody{
-					TotalCount: tea.Int32(int32(pageSize + 1)),
+					NextToken: tea.String(""),
 					Instances: &ecs.DescribeInstancesResponseBodyInstances{
 						Instance: page2Instances,
 					},
@@ -275,14 +280,14 @@ var _ = Describe("Machine Controller", func() {
 				mockPluginSPI.EXPECT().NewDescribeInstancesRequest(deleteMachineRequest.Machine.Name, "", providerSpec.Region, providerSpec.Tags).Return(describeInstanceRequest, nil),
 
 				mockECSClient.EXPECT().DescribeInstances(gomock.AssignableToTypeOf(describeInstanceRequest)).DoAndReturn(func(req *ecs.DescribeInstancesRequest) (*ecs.DescribeInstancesResponse, error) {
-					if *req.PageNumber != 1 {
-						return nil, fmt.Errorf("expected PageNumber 1, got %d", *req.PageNumber)
+					if req.NextToken != nil && *req.NextToken != "" {
+						return nil, fmt.Errorf("expected empty NextToken, got %s", *req.NextToken)
 					}
 					return describeInstanceResponsePage1, nil
 				}),
 				mockECSClient.EXPECT().DescribeInstances(gomock.AssignableToTypeOf(describeInstanceRequest)).DoAndReturn(func(req *ecs.DescribeInstancesRequest) (*ecs.DescribeInstancesResponse, error) {
-					if *req.PageNumber != 2 {
-						return nil, fmt.Errorf("expected PageNumber 2, got %d", *req.PageNumber)
+					if req.NextToken == nil || *req.NextToken != "token-page-2" {
+						return nil, fmt.Errorf("expected NextToken token-page-2, got %v", req.NextToken)
 					}
 					return describeInstanceResponsePage2, nil
 				}),
@@ -383,7 +388,7 @@ var _ = Describe("Machine Controller", func() {
 		var (
 			describeInstanceResponsePage1 = &ecs.DescribeInstancesResponse{
 				Body: &ecs.DescribeInstancesResponseBody{
-					TotalCount: tea.Int32(int32(pageSize + 1)),
+					NextToken: tea.String("token-page-2"),
 					Instances: &ecs.DescribeInstancesResponseBodyInstances{
 						Instance: page1Instances,
 					},
@@ -391,7 +396,7 @@ var _ = Describe("Machine Controller", func() {
 			}
 			describeInstanceResponsePage2 = &ecs.DescribeInstancesResponse{
 				Body: &ecs.DescribeInstancesResponseBody{
-					TotalCount: tea.Int32(int32(pageSize + 1)),
+					NextToken: tea.String(""),
 					Instances: &ecs.DescribeInstancesResponseBodyInstances{
 						Instance: page2Instances,
 					},
@@ -415,15 +420,15 @@ var _ = Describe("Machine Controller", func() {
 			mockPluginSPI.EXPECT().NewDescribeInstancesRequest("", "", providerSpec.Region, providerSpec.Tags).Return(describeInstanceRequest, nil),
 
 			mockECSClient.EXPECT().DescribeInstances(gomock.AssignableToTypeOf(describeInstanceRequest)).DoAndReturn(func(req *ecs.DescribeInstancesRequest) (*ecs.DescribeInstancesResponse, error) {
-				if *req.PageNumber != 1 {
-					return nil, fmt.Errorf("expected PageNumber 1, got %d", *req.PageNumber)
+				if req.NextToken != nil && *req.NextToken != "" {
+					return nil, fmt.Errorf("expected empty NextToken, got %s", *req.NextToken)
 				}
 				return describeInstanceResponsePage1, nil
 			}),
 
 			mockECSClient.EXPECT().DescribeInstances(gomock.AssignableToTypeOf(describeInstanceRequest)).DoAndReturn(func(req *ecs.DescribeInstancesRequest) (*ecs.DescribeInstancesResponse, error) {
-				if *req.PageNumber != 2 {
-					return nil, fmt.Errorf("expected PageNumber 2, got %d", *req.PageNumber)
+				if req.NextToken == nil || *req.NextToken != "token-page-2" {
+					return nil, fmt.Errorf("expected NextToken token-page-2, got %v", req.NextToken)
 				}
 				return describeInstanceResponsePage2, nil
 			}),

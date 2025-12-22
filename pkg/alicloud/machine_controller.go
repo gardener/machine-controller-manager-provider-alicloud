@@ -149,7 +149,7 @@ func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.Delete
 			klog.Errorf("error while fetching instance details for instanceID %s: %v", instanceID, err)
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		klog.V(3).Infof("Total %d instances found for instanceID %s", len(instances), instanceID)
+		klog.V(3).Infof("Total %d instance(s) found for instanceID %s", len(instances), instanceID)
 		if len(instances) == 0 {
 			// No running instance exists with the given machineID
 			errMessage := fmt.Sprintf("ECS instance not found backing this machine object with Provider ID: %v", req.Machine.Spec.ProviderID)
@@ -183,7 +183,7 @@ func (plugin *MachinePlugin) DeleteMachine(_ context.Context, req *driver.Delete
 			klog.Errorf("error while fetching instance details for machine object %s: %v", req.Machine.Name, err)
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		klog.V(3).Infof("Total %d instances found for machine %s", len(instances), req.Machine.Name)
+		klog.V(3).Infof("Total %d instance(s) found for machine %s", len(instances), req.Machine.Name)
 		if len(instances) == 0 {
 			// No running instance exists with the given machineName
 			klog.V(2).Infof("No backing ECS instance found. Termination successful for machine object %q", req.Machine.Name)
@@ -262,7 +262,7 @@ func (plugin *MachinePlugin) GetMachineStatus(_ context.Context, req *driver.Get
 		klog.Errorf("error while fetching instance details for machine object %s: %v", req.Machine.Name, err)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	klog.V(3).Infof("Total %d instances found for machine %s", len(instances), req.Machine.Name)
+	klog.V(3).Infof("Total %d instance(s) found for machine %s", len(instances), req.Machine.Name)
 	if len(instances) == 0 {
 		// No running instance exists with the given machineID
 		klog.V(2).Infof("No matching instances found with %q", req.Machine.Name)
@@ -329,7 +329,7 @@ func (plugin *MachinePlugin) ListMachines(_ context.Context, req *driver.ListMac
 		klog.Errorf("error while fetching instance details for machines: %v", err)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	klog.V(3).Infof("Total %d instances found for listing machines for machine class %q", len(instances), req.MachineClass.Name)
+	klog.V(3).Infof("Total %d instance(s) found for listing machines for machine class %q", len(instances), req.MachineClass.Name)
 	listOfMachines := make(map[string]string)
 	for _, instance := range instances {
 		machineName := *instance.InstanceName
