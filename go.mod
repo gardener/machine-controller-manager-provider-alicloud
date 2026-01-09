@@ -8,7 +8,7 @@ require (
 	github.com/alibabacloud-go/darabonba-openapi/v2 v2.1.13
 	github.com/alibabacloud-go/ecs-20140526/v7 v7.2.4
 	github.com/alibabacloud-go/tea v1.3.13
-	github.com/gardener/machine-controller-manager v0.59.1
+	github.com/gardener/machine-controller-manager v0.61.0
 	github.com/golang/mock v1.4.4
 	github.com/google/uuid v1.6.0
 	github.com/onsi/ginkgo/v2 v2.23.0
