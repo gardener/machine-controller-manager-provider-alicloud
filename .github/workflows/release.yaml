@@ -25,6 +25,10 @@ jobs:
     needs:
       - build
     secrets: inherit
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
     with:
       release-commit-target: branch
       next-version: ${{ inputs.next-version }}
