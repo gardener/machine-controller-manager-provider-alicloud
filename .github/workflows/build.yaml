@@ -33,6 +33,7 @@ jobs:
       matrix:
         args:
           - name: machine-controller-manager-provider-alicloud
+            target:
             oci-repository: gardener/machine-controller-manager-provider-alicloud
             ocm-labels:
               name: gardener.cloud/cve-categorisation
@@ -46,45 +47,21 @@ jobs:
     with:
       name: ${{ matrix.args.name }}
       version: ${{ needs.prepare.outputs.version }}
+      target: ${{ matrix.args.target }}
       oci-registry: ${{ needs.prepare.outputs.oci-registry }}
       oci-repository: ${{ matrix.args.oci-repository }}
       oci-platforms: linux/amd64,linux/arm64
       ocm-labels: ${{ toJSON(matrix.args.ocm-labels) }}
+      extra-tags: latest
 
-  check:
-    runs-on: ubuntu-latest
+  sast-lint:
+    uses: gardener/cc-utils/.github/workflows/sastlint-ocm.yaml@v1
     permissions:
       contents: read
-    steps:
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.26'
-      - uses: gardener/cc-utils/.github/actions/trusted-checkout@v1
-      - name: run-check
-        run: |
-          set -eu
-          .ci/check
-          # verify calls `make sast-report`, which generates `gosec-report.sarif`
-          tar czf gosec-report.tar.gz gosec-report.sarif
-      - name: add-sast-report-to-component-descriptor
-        uses: gardener/cc-utils/.github/actions/export-ocm-fragments@v1
-        with:
-          blobs-directory:
-            name: gosec-report
-            relation: local
-            access:
-              type: localBlob
-              localReference: gosec-report.tar.gz
-            labels:
-              - name: gardener.cloud/purposes
-                value:
-                  - lint
-                  - sast
-                  - gosec
-              - name: gardener.cloud/comment
-                value: |
-                  we use gosec (linter) for SAST scans
-                  see: https://github.com/securego/gosec
+    with:
+      linter: gosec
+      run: .ci/check
+      go-version: '1.26'
 
   unit-test:
     runs-on: ubuntu-latest
@@ -106,12 +83,12 @@ jobs:
         with:
           blobs-directory: /tmp/blobs.d
           ocm-resources: |
-            name: test-results
-            relation: local
-            access:
-              type: localBlob
-              localReference: test-log.tar.gz
-            labels:
-              - name: gardener.cloud/purposes
-                value:
-                  - test
+            - name: test-results
+              relation: local
+              access:
+                type: localBlob
+                localReference: test-log.tar.gz
+              labels:
+                - name: gardener.cloud/purposes
+                  value:
+                    - test
