@@ -58,7 +58,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.26'
       - uses: gardener/cc-utils/.github/actions/trusted-checkout@v1
       - name: run-check
         run: |
@@ -69,8 +69,7 @@ jobs:
       - name: add-sast-report-to-component-descriptor
         uses: gardener/cc-utils/.github/actions/export-ocm-fragments@v1
         with:
-          blobs-directory: .
-          ocm-resources: |
+          blobs-directory:
             name: gosec-report
             relation: local
             access:
@@ -95,7 +94,7 @@ jobs:
       - uses: gardener/cc-utils/.github/actions/trusted-checkout@v1
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.26'
       - name: run-unit-test
         run: |
           set -euo pipefail
