@@ -40,11 +40,11 @@ func newSession(machineClass *v1alpha1.MachineClass, secret *v1.Secret) spi.ECSC
 	err := json.Unmarshal([]byte(machineClass.ProviderSpec.Raw), &providerSpec)
 	if err != nil {
 		providerSpec = nil
-		log.Printf("Error occured while performing unmarshal %s", err.Error())
+		log.Printf("Error occurred while performing unmarshal %s", err.Error())
 	}
 	sess, err := sPI.NewECSClient(secret, providerSpec.Region)
 	if err != nil {
-		log.Printf("Error occured while creating new session %s", err)
+		log.Printf("Error occurred while creating new session %s", err)
 	}
 	return sess
 }
