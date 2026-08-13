@@ -12,6 +12,7 @@ IMAGE_TAG           := $(shell cat VERSION)
 PROVIDER_NAME       := alicloud
 PROJECT_NAME        := gardener
 LEADER_ELECT 	    := "true"
+TARGET_PLATFORMS    ?= linux/$(shell go env GOARCH)
 IS_CONTROL_CLUSTER_SEED 	:= true
 # If Integration Test Suite is to be run locally against clusters then export the below variable
 # with MCM deployment name in the cluster
@@ -86,10 +87,9 @@ build-local:
 build:
 	@.ci/build
 
-PLATFORM ?= linux/amd64
 .PHONY: docker-image
 docker-image:
-	@docker buildx build --platform $(PLATFORM) -t $(IMAGE_REPOSITORY):$(IMAGE_TAG) .
+	@docker buildx build --platform $(TARGET_PLATFORMS) -t $(IMAGE_REPOSITORY):$(IMAGE_TAG) .
 
 .PHONY: docker-login
 docker-login:
