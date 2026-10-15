@@ -6,6 +6,7 @@ require (
 	github.com/alibabacloud-go/darabonba-openapi/v2 v2.1.14
 	github.com/alibabacloud-go/ecs-20140526/v7 v7.7.4
 	github.com/alibabacloud-go/tea v1.4.0
+	github.com/aliyun/credentials-go v1.4.5
 	github.com/gardener/machine-controller-manager v0.63.0
 	github.com/golang/mock v1.4.4
 	github.com/google/uuid v1.6.0
@@ -24,7 +25,6 @@ require (
 	github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.5 // indirect
 	github.com/alibabacloud-go/debug v1.0.1 // indirect
 	github.com/alibabacloud-go/tea-utils/v2 v2.0.7 // indirect
-	github.com/aliyun/credentials-go v1.4.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

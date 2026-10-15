@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	ecs "github.com/alibabacloud-go/ecs-20140526/v7/client"
 	"github.com/alibabacloud-go/tea/tea"
+	credential "github.com/aliyun/credentials-go/credentials"
 	"github.com/google/uuid"
 
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
@@ -37,6 +39,13 @@ const (
 	AlicloudUserData string = "userData"
 	// AlicloudDriverName is the name of the CSI driver for Alibaba Cloud
 	AlicloudDriverName = "diskplugin.csi.alibabacloud.com"
+
+	// AlicloudOIDCProviderARN is the secret key for the RRSA OIDC provider ARN (workload identity mode).
+	AlicloudOIDCProviderARN = "oidcProviderARN"
+	// AlicloudRoleARN is the secret key for the RAM role ARN to assume (workload identity mode).
+	AlicloudRoleARN = "roleARN"
+	// AlicloudOIDCTokenFile is the secret key for the OIDC token file path mounted in the MCM pod (workload identity mode).
+	AlicloudOIDCTokenFile = "oidcTokenFile"
 )
 
 // ECSClient provides an interface
@@ -67,18 +76,57 @@ type PluginSPIImpl struct{}
 
 // NewECSClient returns a new instance of the ECS client.
 func (pluginSPI *PluginSPIImpl) NewECSClient(secret *corev1.Secret, region string) (ECSClient, error) {
-	accessKeyID := extractCredentialsFromData(secret.Data, AlicloudAccessKeyID, AlicloudAlternativeAccessKeyID)
-	accessKeySecret := extractCredentialsFromData(secret.Data, AlicloudAccessKeySecret, AlicloudAlternativeAccessKeySecret)
+	cred, err := buildCredential(secret.Data, secret.Namespace)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	ecsClient, err := ecs.NewClient(&openapi.Config{
-		RegionId:        &region,
-		AccessKeyId:     &accessKeyID,
-		AccessKeySecret: &accessKeySecret,
+		RegionId:   &region,
+		Credential: cred,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+	return ecsClient, nil
+}
 
-	return ecsClient, err
+// buildCredential constructs an Alibaba Cloud credential from secret data.
+// It supports two modes: AK/SK (when accessKeyID is present) and workload identity via OIDC.
+func buildCredential(secretData map[string][]byte, namespace string) (credential.Credential, error) {
+	if accessKeyID := extractCredentialsFromData(secretData, AlicloudAccessKeyID, AlicloudAlternativeAccessKeyID); accessKeyID != "" {
+		accessKeySecret := extractCredentialsFromData(secretData, AlicloudAccessKeySecret, AlicloudAlternativeAccessKeySecret)
+		if accessKeySecret == "" {
+			return nil, fmt.Errorf("accessKeyID present but accessKeySecret missing")
+		}
+		return credential.NewCredential(&credential.Config{
+			Type:            tea.String("access_key"),
+			AccessKeyId:     tea.String(accessKeyID),
+			AccessKeySecret: tea.String(accessKeySecret),
+		})
+	}
+
+	oidcProviderARN := strings.TrimSpace(string(secretData[AlicloudOIDCProviderARN]))
+	roleARN := strings.TrimSpace(string(secretData[AlicloudRoleARN]))
+	tokenFilePath := strings.TrimSpace(string(secretData[AlicloudOIDCTokenFile]))
+	if oidcProviderARN == "" || roleARN == "" || tokenFilePath == "" {
+		return nil, fmt.Errorf("secret has neither accessKeyID nor complete workload identity config (oidcProviderARN, roleARN, oidcTokenFile)")
+	}
+
+	return credential.NewCredential(&credential.Config{
+		Type:              tea.String("oidc_role_arn"),
+		OIDCProviderArn:   tea.String(oidcProviderARN),
+		RoleArn:           tea.String(roleARN),
+		OIDCTokenFilePath: tea.String(tokenFilePath),
+		RoleSessionName:   tea.String(buildSessionName(namespace)),
+	})
+}
+
+// buildSessionName produces an STS session name that includes the namespace for audit traceability.
+func buildSessionName(namespace string) string {
+	if len(namespace) > 44 {
+		namespace = namespace[:44]
+	}
+	return fmt.Sprintf("mcm-%s-%d", namespace, time.Now().Unix())
 }
 
 // NewRunInstancesRequest returns a new request of run instance.
