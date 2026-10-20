@@ -105,9 +105,9 @@ func buildCredential(secretData map[string][]byte, namespace string) (credential
 		})
 	}
 
-	oidcProviderARN := strings.TrimSpace(string(secretData[AlicloudOIDCProviderARN]))
-	roleARN := strings.TrimSpace(string(secretData[AlicloudRoleARN]))
-	tokenFilePath := strings.TrimSpace(string(secretData[AlicloudOIDCTokenFile]))
+	oidcProviderARN := extractCredentialsFromData(secretData, AlicloudOIDCProviderARN)
+	roleARN := extractCredentialsFromData(secretData, AlicloudRoleARN)
+	tokenFilePath := extractCredentialsFromData(secretData, AlicloudOIDCTokenFile)
 	if oidcProviderARN == "" || roleARN == "" || tokenFilePath == "" {
 		return nil, fmt.Errorf("secret has neither accessKeyID nor complete workload identity config (oidcProviderARN, roleARN, oidcTokenFile)")
 	}
