@@ -123,8 +123,8 @@ func buildCredential(secretData map[string][]byte, namespace string) (credential
 
 // buildSessionName produces an STS session name that includes the namespace for audit traceability.
 func buildSessionName(namespace string) string {
-	if len(namespace) > 44 {
-		namespace = namespace[:44]
+	if len(namespace) > 49 {
+		namespace = namespace[:49]
 	}
 	return fmt.Sprintf("mcm-%s-%d", namespace, time.Now().Unix())
 }
